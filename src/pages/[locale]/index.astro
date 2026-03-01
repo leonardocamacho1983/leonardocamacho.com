@@ -189,6 +189,7 @@ const aboutHeadlineSuffix = aboutHeadlineMatch
         position: relative;
         width: 100%;
         min-height: 100vh;
+        min-height: 100svh;
         overflow: hidden;
         background: var(--flow-cream);
         isolation: isolate;
@@ -198,6 +199,7 @@ const aboutHeadlineSuffix = aboutHeadlineMatch
         position: relative;
         z-index: 1;
         min-height: 100vh;
+        min-height: 100svh;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -206,6 +208,7 @@ const aboutHeadlineSuffix = aboutHeadlineMatch
 
       .launch-content {
         width: min(680px, 100%);
+        max-width: 100%;
         text-align: center;
         position: relative;
         z-index: 1;
@@ -268,7 +271,7 @@ const aboutHeadlineSuffix = aboutHeadlineMatch
 
       .launch-form {
         display: flex;
-        max-width: 420px;
+        max-width: 460px;
         margin: 0 auto;
         border: 1px solid var(--flow-border);
         border-radius: 8px;
@@ -375,10 +378,16 @@ const aboutHeadlineSuffix = aboutHeadlineMatch
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
+        max-width: 440px;
+        margin-inline: auto;
         font-family: var(--flow-font-ui);
         font-size: 11px;
         letter-spacing: 0.06em;
         color: var(--flow-stone);
+      }
+
+      .launch-architecture span {
+        white-space: nowrap;
       }
 
       .launch-architecture__accent {
@@ -400,6 +409,8 @@ const aboutHeadlineSuffix = aboutHeadlineMatch
         display: inline-flex;
         align-items: center;
         gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
       }
 
       .launch-date-label {
@@ -496,7 +507,8 @@ const aboutHeadlineSuffix = aboutHeadlineMatch
 
       @media (max-width: 760px) {
         .launch-main {
-          padding-inline: 20px;
+          padding: calc(26px + env(safe-area-inset-top)) 20px calc(42px + env(safe-area-inset-bottom));
+          align-items: flex-start;
         }
 
         .launch-author {
@@ -509,10 +521,92 @@ const aboutHeadlineSuffix = aboutHeadlineMatch
 
         .launch-form {
           flex-direction: column;
+          max-width: 100%;
         }
 
         .launch-submit {
           width: 100%;
+        }
+
+        .launch-note {
+          margin-top: 10px;
+        }
+
+        .launch-meta {
+          margin-top: 22px;
+        }
+      }
+
+      @media (max-width: 540px) {
+        .launch-content {
+          width: min(420px, 100%);
+        }
+
+        .launch-author {
+          gap: 10px;
+          margin-bottom: 34px;
+        }
+
+        .launch-author__line {
+          width: 30px;
+        }
+
+        .launch-author__name {
+          font-size: 9px;
+          letter-spacing: 0.2em;
+        }
+
+        .launch-headline {
+          font-size: clamp(28px, 11vw, 42px);
+          line-height: 1.1;
+        }
+
+        .launch-subhead {
+          margin-top: 14px;
+          font-size: 13px;
+          line-height: 1.65;
+          max-width: 320px;
+        }
+
+        .launch-form-wrap {
+          margin-top: 24px;
+        }
+
+        .launch-input {
+          padding: 16px 18px;
+          font-size: 16px;
+        }
+
+        .launch-submit {
+          padding: 16px 18px;
+          font-size: 12px;
+          letter-spacing: 0.09em;
+        }
+
+        .launch-architecture {
+          margin-top: 24px;
+          max-width: 340px;
+          gap: 8px 10px;
+        }
+
+        .launch-architecture__dot {
+          display: none;
+        }
+
+        .launch-date-label {
+          font-size: 9px;
+          letter-spacing: 0.14em;
+        }
+
+        .launch-language__summary {
+          padding: 3px 7px;
+        }
+
+        .launch-language__menu {
+          min-width: 176px;
+          left: auto;
+          right: 0;
+          transform: none;
         }
       }
     </style>

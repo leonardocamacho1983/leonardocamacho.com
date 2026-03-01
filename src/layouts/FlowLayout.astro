@@ -47,11 +47,13 @@ const { title, description, lang = 'en' } = Astro.props;
     body.flow-page {
       background: var(--flow-cream);
       min-height: 100vh;
+      min-height: 100svh;
       display: flex;
       align-items: center;
       justify-content: center;
       -webkit-font-smoothing: antialiased;
       position: relative;
+      overflow-x: hidden;
     }
 
     .flow-container {
@@ -441,8 +443,12 @@ const { title, description, lang = 'en' } = Astro.props;
     }
 
     @media (max-width: 768px) {
+      body.flow-page {
+        align-items: flex-start;
+      }
+
       .flow-container {
-        padding: 72px 20px 64px;
+        padding: calc(58px + env(safe-area-inset-top)) 20px calc(56px + env(safe-area-inset-bottom));
       }
 
       .flow-buttons {
@@ -457,6 +463,58 @@ const { title, description, lang = 'en' } = Astro.props;
 
       .flow-form-actions {
         flex-wrap: wrap;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .flow-container {
+        padding-inline: 16px;
+      }
+
+      .flow-label {
+        margin-bottom: 34px;
+      }
+
+      .flow-hero {
+        font-size: clamp(32px, 11vw, 44px);
+      }
+
+      .flow-hero-split {
+        font-size: clamp(30px, 10vw, 38px);
+        line-height: 1.12;
+      }
+
+      .flow-body {
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .flow-form {
+        margin-top: 26px;
+      }
+
+      .flow-input,
+      .flow-textarea {
+        font-size: 16px;
+      }
+
+      .flow-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .flow-btn-submit {
+        width: 100%;
+      }
+
+      .flow-skip {
+        align-self: center;
+      }
+
+      .flow-social-link {
+        width: 100%;
+        justify-content: center;
       }
     }
 

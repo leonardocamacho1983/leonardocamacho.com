@@ -554,6 +554,7 @@ const latticeBackward = generateLatticeLines("up", 1720, 44, -54, 980, 360);
     height: 100%;
     transform: translateZ(0);
     backface-visibility: hidden;
+    transform-origin: center center;
   }
 
   .launch-illustration__line {
@@ -578,6 +579,26 @@ const latticeBackward = generateLatticeLines("up", 1720, 44, -54, 980, 360);
 
     to {
       stroke-dashoffset: 0;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .launch-illustration {
+      opacity: 0.94;
+    }
+
+    .launch-illustration svg {
+      transform: scale(1.08) translateZ(0);
+    }
+  }
+
+  @media (max-width: 540px) {
+    .launch-illustration {
+      opacity: 0.9;
+    }
+
+    .launch-illustration svg {
+      transform: scale(1.14) translateY(1%) translateZ(0);
     }
   }
 
