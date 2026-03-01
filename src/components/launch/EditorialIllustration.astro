@@ -1,0 +1,591 @@
+---
+const pal = {
+  cream: "#f0ebe4",
+  roseClay: "#c4917a",
+  warmGrey: "#ccc0b2",
+  stone: "#8a7d74",
+  debug: "#b5453a",
+};
+
+const OPACITY_SCALE = 1.2;
+const STROKE_SCALE = 1.22;
+const ANIM_DURATION_SCALE = 1.0;
+
+const CLUSTER_OFFSET = {
+  TR: { x: -100, y: 100 },
+  BL: { x: 100, y: -120 },
+} as const;
+
+const VISIBILITY = {
+  ringOpacity: {
+    inner: 0.14,
+    middle: 0.2,
+    outer: 0.16,
+    far: 0.12,
+  },
+  lineOpacity: {
+    ray: 0.16,
+    check: 0.18,
+  },
+  stroke: {
+    inner: 1.0,
+    middle: 1.1,
+    outer: 1.2,
+    far: 1.1,
+    ray: 0.65,
+    check: 0.75,
+  },
+} as const;
+
+const ANIM = {
+  clusterDelayStart: { TR: 0.4, BL: 0.6, TL: 0.52, BR: 0.72 },
+  clusterDelayStep: 0.03,
+  rayDelayStart: { TR: 0.75, BL: 0.95 },
+  rayDelayStep: 0.08,
+  checkDelayStart: { TR: 1.0, BL: 1.2 },
+  checkDelayStep: 0.18,
+  clusterDurationBase: 1.9,
+  clusterDurationJitter: 0.45,
+  rayDuration: 2.2,
+  checkDuration: 1.6,
+} as const;
+
+const ILLUSTRATION_DEBUG = import.meta.env.PUBLIC_LAUNCH_ILLUSTRATION_DEBUG === "true";
+const DEBUG_OPACITY_MULTIPLIER = ILLUSTRATION_DEBUG ? 1.35 : 1;
+
+interface Ring {
+  cx: number;
+  cy: number;
+  r: number;
+  strokeWidth: number;
+  color: string;
+  opacity: number;
+  irregularity: number;
+  seed: number;
+}
+
+interface Check {
+  angle: number;
+  innerR: number;
+  outerR: number;
+  seed: number;
+}
+
+interface LatticeLine {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  opacity: number;
+  strokeWidth: number;
+  color: string;
+}
+
+const clampOpacity = (value: number): number => Math.max(0, Math.min(0.34, value));
+const tuneOpacity = (value: number): number =>
+  clampOpacity(value * OPACITY_SCALE * DEBUG_OPACITY_MULTIPLIER);
+const tuneStroke = (value: number): number => Number((value * STROKE_SCALE).toFixed(2));
+
+const CENTER_READ_ZONE = {
+  cx: 600,
+  cy: 500,
+  inner: 170,
+  outer: 330,
+  minFactor: 0.22,
+} as const;
+
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function distancePointToLine(
+  px: number,
+  py: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): number {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const numerator = Math.abs(dy * px - dx * py + x2 * y1 - y2 * x1);
+  const denominator = Math.sqrt(dx * dx + dy * dy);
+  return denominator === 0 ? 0 : numerator / denominator;
+}
+
+function centerFadeFactor(distance: number): number {
+  if (distance <= CENTER_READ_ZONE.inner) return CENTER_READ_ZONE.minFactor;
+  if (distance >= CENTER_READ_ZONE.outer) return 1;
+
+  const t = (distance - CENTER_READ_ZONE.inner) / (CENTER_READ_ZONE.outer - CENTER_READ_ZONE.inner);
+  return CENTER_READ_ZONE.minFactor + t * (1 - CENTER_READ_ZONE.minFactor);
+}
+
+function ringPath(
+  cx: number,
+  cy: number,
+  r: number,
+  seed: number,
+  irregularity: number,
+): string {
+  const pts = 100;
+  const coords: string[] = [];
+
+  for (let i = 0; i <= pts; i += 1) {
+    const a = (i / pts) * Math.PI * 2;
+    const wobble =
+      Math.sin(a * 3 + seed * 1.1) * irregularity * 0.35 +
+      Math.sin(a * 7 + seed * 2.3) * irregularity * 0.25 +
+      Math.cos(a * 5 + seed * 0.7) * irregularity * 0.2 +
+      Math.sin(a * 11 + seed * 3.1) * irregularity * 0.12 +
+      Math.cos(a * 2 + seed * 0.3) * irregularity * 0.4;
+
+    const rr = r + wobble;
+    coords.push(`${(cx + Math.cos(a) * rr).toFixed(1)},${(cy + Math.sin(a) * rr).toFixed(1)}`);
+  }
+
+  return `M${coords[0]} ${coords.slice(1).map((c) => `L${c}`).join(" ")} Z`;
+}
+
+function checkPath(
+  cx: number,
+  cy: number,
+  angle: number,
+  innerR: number,
+  outerR: number,
+  seed: number,
+): string {
+  const pts = 14;
+  const coords: string[] = [];
+
+  for (let i = 0; i <= pts; i += 1) {
+    const t = i / pts;
+    const r = innerR + t * (outerR - innerR);
+    const drift = Math.sin(t * 4 + seed) * 3.5 + Math.cos(t * 7 + seed * 2) * 2;
+    const a = angle + drift / r;
+    coords.push(`${(cx + Math.cos(a) * r).toFixed(1)},${(cy + Math.sin(a) * r).toFixed(1)}`);
+  }
+
+  return `M${coords[0]} ${coords.slice(1).map((c) => `L${c}`).join(" ")}`;
+}
+
+function drawStyle(delay: number, duration: number, opacity: number): string {
+  const tunedDuration = duration * ANIM_DURATION_SCALE;
+  const tunedOpacity = tuneOpacity(opacity);
+
+  return `--draw-delay:${delay.toFixed(2)}s;--draw-duration:${tunedDuration.toFixed(2)}s;--draw-opacity:${tunedOpacity.toFixed(3)};`;
+}
+
+function generateLatticeLines(
+  direction: "down" | "up",
+  startY: number,
+  count: number,
+  step: number,
+  slope: number,
+  seedOffset: number,
+): LatticeLine[] {
+  const lines: LatticeLine[] = [];
+
+  for (let i = 0; i < count; i += 1) {
+    const jitter = (seededRandom((i + seedOffset) * 19) - 0.5) * 22;
+    const y = startY + i * step + jitter;
+    const major = i % 7 === 0;
+    const opacityBase =
+      (direction === "down" ? VISIBILITY.lineOpacity.check * 0.78 : VISIBILITY.lineOpacity.check * 0.72) +
+      (major ? 0.025 : 0);
+    const strokeBase = VISIBILITY.stroke.check * (major ? 0.9 : 0.78);
+
+    const x1 = -600;
+    const x2 = 1800;
+    const y2 = direction === "down" ? y + slope : y - slope;
+    const distance = distancePointToLine(CENTER_READ_ZONE.cx, CENTER_READ_ZONE.cy, x1, y, x2, y2);
+    const centerFactor = centerFadeFactor(distance);
+
+    lines.push({
+      x1,
+      y1: y,
+      x2,
+      y2,
+      opacity: clampOpacity(opacityBase * centerFactor),
+      strokeWidth: tuneStroke(strokeBase),
+      color: major ? pal.stone : pal.warmGrey,
+    });
+  }
+
+  return lines;
+}
+
+function generateCluster(
+  cx: number,
+  cy: number,
+  seedOffset: number,
+  opacityMultiplier = 1,
+): Ring[] {
+  const rings: Ring[] = [];
+  let r = 30;
+  let idx = 0;
+
+  const gaps = [
+    8, 7, 9, 6, 10, 8.5, 7, 11, 9, 7.5,
+    13, 15, 12, 16, 14, 11, 17, 13, 15, 12,
+    18, 14, 20, 16, 19, 15, 21, 17, 18, 20,
+    22, 19, 24, 21, 23, 18, 25, 20, 22, 24,
+  ];
+
+  for (const gap of gaps) {
+    r += gap;
+    if (r > 1200) break;
+
+    let color = pal.warmGrey;
+    let opacity: number = VISIBILITY.ringOpacity.far;
+
+    if (r < 200) {
+      color = pal.roseClay;
+      opacity = VISIBILITY.ringOpacity.inner;
+    } else if (r < 500) {
+      color = pal.stone;
+      opacity = VISIBILITY.ringOpacity.middle;
+    } else if (r < 800) {
+      color = pal.warmGrey;
+      opacity = VISIBILITY.ringOpacity.outer;
+    }
+    opacity *= opacityMultiplier;
+
+    const irregularity =
+      r < 200
+        ? 4 + seededRandom((idx + seedOffset) * 7) * 2
+        : r < 500
+          ? 6 + seededRandom((idx + seedOffset) * 7) * 3
+          : r < 800
+            ? 8 + seededRandom((idx + seedOffset) * 7) * 4
+            : 10 + seededRandom((idx + seedOffset) * 7) * 5;
+
+    const strokeWidth =
+      r < 200
+        ? tuneStroke(VISIBILITY.stroke.inner)
+        : r < 500
+          ? tuneStroke(VISIBILITY.stroke.middle)
+          : r < 800
+            ? tuneStroke(VISIBILITY.stroke.outer)
+            : tuneStroke(VISIBILITY.stroke.far);
+
+    rings.push({
+      cx,
+      cy,
+      r,
+      strokeWidth,
+      color,
+      opacity,
+      irregularity,
+      seed: (idx + seedOffset) * 1.37,
+    });
+
+    idx += 1;
+  }
+
+  return rings;
+}
+
+const TR = {
+  cx: 1020 + CLUSTER_OFFSET.TR.x,
+  cy: -200 + CLUSTER_OFFSET.TR.y,
+};
+
+const BL = {
+  cx: 180 + CLUSTER_OFFSET.BL.x,
+  cy: 1200 + CLUSTER_OFFSET.BL.y,
+};
+
+const TL = {
+  cx: 180 - CLUSTER_OFFSET.BL.x,
+  cy: -200 + CLUSTER_OFFSET.TR.y,
+};
+
+const BR = {
+  cx: 1020 - CLUSTER_OFFSET.TR.x,
+  cy: 1200 + CLUSTER_OFFSET.BL.y,
+};
+
+const clusterTR = generateCluster(TR.cx, TR.cy, 0);
+const clusterBL = generateCluster(BL.cx, BL.cy, 100);
+const clusterTL = generateCluster(TL.cx, TL.cy, 200, 1.05);
+const clusterBR = generateCluster(BR.cx, BR.cy, 300, 1.05);
+
+const raysTR: number[] = [2.05, 2.35, 2.65, 2.95, 3.25, 3.55, 3.85, 4.15];
+const raysBL: number[] = [0.1, 0.34, 0.58, 0.82, 5.52, 5.76, 6.0, 6.2];
+
+const checksTR: Check[] = [
+  { angle: 2.24, innerR: 30, outerR: 840, seed: 1.1 },
+  { angle: 2.36, innerR: 36, outerR: 820, seed: 1.7 },
+  { angle: 2.48, innerR: 42, outerR: 800, seed: 2.3 },
+  { angle: 2.6, innerR: 48, outerR: 780, seed: 2.9 },
+  { angle: 2.72, innerR: 54, outerR: 760, seed: 3.5 },
+  { angle: 2.84, innerR: 60, outerR: 740, seed: 4.1 },
+  { angle: 2.96, innerR: 66, outerR: 720, seed: 4.7 },
+  { angle: 3.08, innerR: 72, outerR: 700, seed: 5.3 },
+  { angle: 3.42, innerR: 34, outerR: 760, seed: 5.9 },
+  { angle: 3.54, innerR: 42, outerR: 740, seed: 6.5 },
+  { angle: 3.66, innerR: 50, outerR: 720, seed: 7.1 },
+  { angle: 3.78, innerR: 58, outerR: 700, seed: 7.7 },
+  { angle: 3.9, innerR: 66, outerR: 680, seed: 8.3 },
+  { angle: 4.02, innerR: 74, outerR: 660, seed: 8.9 },
+];
+
+const checksBL: Check[] = [
+  { angle: 0.14, innerR: 30, outerR: 840, seed: 9.5 },
+  { angle: 0.26, innerR: 36, outerR: 820, seed: 10.1 },
+  { angle: 0.38, innerR: 42, outerR: 800, seed: 10.7 },
+  { angle: 0.5, innerR: 48, outerR: 780, seed: 11.3 },
+  { angle: 0.62, innerR: 54, outerR: 760, seed: 11.9 },
+  { angle: 0.74, innerR: 60, outerR: 740, seed: 12.5 },
+  { angle: 0.86, innerR: 66, outerR: 720, seed: 13.1 },
+  { angle: 0.98, innerR: 72, outerR: 700, seed: 13.7 },
+  { angle: 5.3, innerR: 34, outerR: 760, seed: 14.3 },
+  { angle: 5.42, innerR: 42, outerR: 740, seed: 14.9 },
+  { angle: 5.54, innerR: 50, outerR: 720, seed: 15.5 },
+  { angle: 5.66, innerR: 58, outerR: 700, seed: 16.1 },
+  { angle: 5.78, innerR: 66, outerR: 680, seed: 16.7 },
+  { angle: 5.9, innerR: 74, outerR: 660, seed: 17.3 },
+];
+
+const latticeForward = generateLatticeLines("down", -720, 44, 54, 980, 220);
+const latticeBackward = generateLatticeLines("up", 1720, 44, -54, 980, 360);
+---
+
+<div class="launch-illustration" aria-hidden="true">
+  <svg
+    viewBox="0 0 1200 1000"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    preserveAspectRatio="xMidYMid slice"
+  >
+    <defs>
+      <radialGradient id="launch-read-zone" cx="50%" cy="50%" r="62%">
+        <stop offset="0%" stop-color={pal.cream} stop-opacity="1" />
+        <stop offset="28%" stop-color={pal.cream} stop-opacity="1" />
+        <stop offset="40%" stop-color={pal.cream} stop-opacity="0.95" />
+        <stop offset="50%" stop-color={pal.cream} stop-opacity="0.45" />
+        <stop offset="58%" stop-color={pal.cream} stop-opacity="0.12" />
+        <stop offset="68%" stop-color={pal.cream} stop-opacity="0.03" />
+        <stop offset="80%" stop-color={pal.cream} stop-opacity="0.008" />
+        <stop offset="100%" stop-color={pal.cream} stop-opacity="0" />
+      </radialGradient>
+    </defs>
+
+    {latticeForward.map((line, i) => (
+      <line
+        class="launch-illustration__line"
+        pathLength="1"
+        x1={line.x1}
+        y1={line.y1}
+        x2={line.x2}
+        y2={line.y2}
+        stroke={line.color}
+        stroke-width={line.strokeWidth}
+        style={drawStyle(0.12 + i * 0.02, 2.55, line.opacity)}
+      />
+    ))}
+
+    {latticeBackward.map((line, i) => (
+      <line
+        class="launch-illustration__line"
+        pathLength="1"
+        x1={line.x1}
+        y1={line.y1}
+        x2={line.x2}
+        y2={line.y2}
+        stroke={line.color}
+        stroke-width={line.strokeWidth}
+        style={drawStyle(0.2 + i * 0.02, 2.55, line.opacity)}
+      />
+    ))}
+
+    {clusterTL.map((ring, i) => (
+      <path
+        class="launch-illustration__line"
+        pathLength="1"
+        d={ringPath(ring.cx, ring.cy, ring.r, ring.seed, ring.irregularity)}
+        stroke={ring.color}
+        stroke-width={ring.strokeWidth}
+        fill="none"
+        style={drawStyle(
+          ANIM.clusterDelayStart.TL + i * ANIM.clusterDelayStep,
+          ANIM.clusterDurationBase + seededRandom((i + 200) * 13) * ANIM.clusterDurationJitter,
+          ring.opacity,
+        )}
+      />
+    ))}
+
+    {raysTR.map((angle, i) => (
+      <line
+        class="launch-illustration__line"
+        pathLength="1"
+        x1={TR.cx + Math.cos(angle) * 50}
+        y1={TR.cy + Math.sin(angle) * 50}
+        x2={TR.cx + Math.cos(angle) * (800 + (i % 3) * 80)}
+        y2={TR.cy + Math.sin(angle) * (800 + (i % 3) * 80)}
+        stroke={pal.warmGrey}
+        stroke-width={tuneStroke(VISIBILITY.stroke.ray)}
+        style={drawStyle(ANIM.rayDelayStart.TR + i * ANIM.rayDelayStep, ANIM.rayDuration, VISIBILITY.lineOpacity.ray)}
+      />
+    ))}
+
+    {clusterTR.map((ring, i) => (
+      <path
+        class="launch-illustration__line"
+        pathLength="1"
+        d={ringPath(ring.cx, ring.cy, ring.r, ring.seed, ring.irregularity)}
+        stroke={ring.color}
+        stroke-width={ring.strokeWidth}
+        fill="none"
+        style={drawStyle(
+          ANIM.clusterDelayStart.TR + i * ANIM.clusterDelayStep,
+          ANIM.clusterDurationBase + seededRandom(i * 13) * ANIM.clusterDurationJitter,
+          ring.opacity,
+        )}
+      />
+    ))}
+
+    {checksTR.map((check, i) => (
+      <path
+        class="launch-illustration__line"
+        pathLength="1"
+        d={checkPath(TR.cx, TR.cy, check.angle, check.innerR, check.outerR, check.seed)}
+        stroke={pal.warmGrey}
+        stroke-width={tuneStroke(VISIBILITY.stroke.check)}
+        fill="none"
+        stroke-linecap="round"
+        style={drawStyle(ANIM.checkDelayStart.TR + i * ANIM.checkDelayStep, ANIM.checkDuration, VISIBILITY.lineOpacity.check)}
+      />
+    ))}
+
+    {raysBL.map((angle, i) => (
+      <line
+        class="launch-illustration__line"
+        pathLength="1"
+        x1={BL.cx + Math.cos(angle) * 50}
+        y1={BL.cy + Math.sin(angle) * 50}
+        x2={BL.cx + Math.cos(angle) * (800 + (i % 3) * 80)}
+        y2={BL.cy + Math.sin(angle) * (800 + (i % 3) * 80)}
+        stroke={pal.warmGrey}
+        stroke-width={tuneStroke(VISIBILITY.stroke.ray)}
+        style={drawStyle(ANIM.rayDelayStart.BL + i * ANIM.rayDelayStep, ANIM.rayDuration, VISIBILITY.lineOpacity.ray)}
+      />
+    ))}
+
+    {clusterBL.map((ring, i) => (
+      <path
+        class="launch-illustration__line"
+        pathLength="1"
+        d={ringPath(ring.cx, ring.cy, ring.r, ring.seed, ring.irregularity)}
+        stroke={ring.color}
+        stroke-width={ring.strokeWidth}
+        fill="none"
+        style={drawStyle(
+          ANIM.clusterDelayStart.BL + i * ANIM.clusterDelayStep,
+          ANIM.clusterDurationBase + seededRandom((i + 100) * 13) * ANIM.clusterDurationJitter,
+          ring.opacity,
+        )}
+      />
+    ))}
+
+    {clusterBR.map((ring, i) => (
+      <path
+        class="launch-illustration__line"
+        pathLength="1"
+        d={ringPath(ring.cx, ring.cy, ring.r, ring.seed, ring.irregularity)}
+        stroke={ring.color}
+        stroke-width={ring.strokeWidth}
+        fill="none"
+        style={drawStyle(
+          ANIM.clusterDelayStart.BR + i * ANIM.clusterDelayStep,
+          ANIM.clusterDurationBase + seededRandom((i + 300) * 13) * ANIM.clusterDurationJitter,
+          ring.opacity,
+        )}
+      />
+    ))}
+
+    {checksBL.map((check, i) => (
+      <path
+        class="launch-illustration__line"
+        pathLength="1"
+        d={checkPath(BL.cx, BL.cy, check.angle, check.innerR, check.outerR, check.seed)}
+        stroke={pal.warmGrey}
+        stroke-width={tuneStroke(VISIBILITY.stroke.check)}
+        fill="none"
+        stroke-linecap="round"
+        style={drawStyle(ANIM.checkDelayStart.BL + i * ANIM.checkDelayStep, ANIM.checkDuration, VISIBILITY.lineOpacity.check)}
+      />
+    ))}
+
+    {ILLUSTRATION_DEBUG && (
+      <g class="launch-illustration__debug" aria-hidden="true">
+        <circle cx={TR.cx} cy={TR.cy} r="5" fill={pal.debug} />
+        <text x={TR.cx + 12} y={TR.cy + 6}>TR ({TR.cx}, {TR.cy})</text>
+        <circle cx={BL.cx} cy={BL.cy} r="5" fill={pal.debug} />
+        <text x={BL.cx + 12} y={BL.cy + 6}>BL ({BL.cx}, {BL.cy})</text>
+        <circle cx={TL.cx} cy={TL.cy} r="5" fill={pal.debug} />
+        <text x={TL.cx + 12} y={TL.cy + 6}>TL ({TL.cx}, {TL.cy})</text>
+        <circle cx={BR.cx} cy={BR.cy} r="5" fill={pal.debug} />
+        <text x={BR.cx + 12} y={BR.cy + 6}>BR ({BR.cx}, {BR.cy})</text>
+      </g>
+    )}
+
+    <rect x="0" y="0" width="1200" height="1000" fill="url(#launch-read-zone)" />
+  </svg>
+</div>
+
+<style>
+  .launch-illustration {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    contain: paint;
+    isolation: isolate;
+    transform: translateZ(0);
+  }
+
+  .launch-illustration svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .launch-illustration__line {
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    opacity: var(--draw-opacity);
+    animation:
+      launch-ring-draw var(--draw-duration) cubic-bezier(0.22, 0.1, 0.25, 1) var(--draw-delay) forwards;
+  }
+
+  .launch-illustration__debug text {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    fill: var(--flow-near-black, #1a1715);
+  }
+
+  @keyframes launch-ring-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .launch-illustration__line {
+      animation: none;
+      stroke-dashoffset: 0;
+      opacity: var(--draw-opacity);
+    }
+  }
+</style>

@@ -1,0 +1,94 @@
+---
+export const prerender = false;
+import FlowLayout from '../../layouts/FlowLayout.astro';
+import { copy } from '../../data/newsletter-copy';
+
+const c = copy['fr'];
+---
+
+<FlowLayout title="Vous êtes inscrit — Leonardo Camacho" description="Confirmez votre email pour garantir votre place." lang={c.lang}>
+  <main class="flow-container">
+    <div class="flow-seed" aria-hidden="true">
+      <svg viewBox="0 0 360 360" fill="none">
+        <circle cx="180" cy="180" r="5" fill="#c4917a" class="seed-dot"></circle>
+        <circle cx="180" cy="180" r="0" stroke="#c4917a" stroke-width="1" class="seed-ring seed-ring-1"></circle>
+        <circle cx="180" cy="180" r="0" stroke="#ccc0b2" stroke-width="1" class="seed-ring seed-ring-2"></circle>
+        <circle cx="180" cy="180" r="0" stroke="#ccc0b2" stroke-width="0.8" class="seed-ring seed-ring-3"></circle>
+      </svg>
+    </div>
+
+    <div class="flow-layer welcome-enter">
+      <p class="flow-label">{c.welcomeLabel}</p>
+      <h1 class="flow-hero">{c.welcomeHero}</h1>
+      <div class="welcome-gap-lg"></div>
+      <p class="flow-body" set:html={c.welcomeSeason} />
+      <p class="flow-body">{c.welcomeExclusive}</p>
+      <div class="welcome-gap-sm"></div>
+      <p class="flow-body flow-instruction">{c.welcomeInstruction}</p>
+      <div class="flow-buttons">
+        <a href="https://mail.google.com/mail/" target="_blank" rel="noopener noreferrer" class="flow-btn flow-btn-primary">
+          {c.welcomeOpenGmail}
+        </a>
+        <a href="https://outlook.live.com/mail/" target="_blank" rel="noopener noreferrer" class="flow-btn flow-btn-primary">
+          {c.welcomeOpenOutlook}
+        </a>
+      </div>
+      <div class="flow-subject-card">
+        <p class="flow-subject-label">{c.welcomeSubjectLabel}</p>
+        <p class="flow-subject-text">{c.welcomeSubjectLine}</p>
+      </div>
+    </div>
+  </main>
+  <div class="flow-bottom-thread" aria-hidden="true"></div>
+
+  <style>
+    @keyframes seed-dot-in {
+      from { opacity: 0; transform: scale(0); }
+      to { opacity: 0.35; transform: scale(1); }
+    }
+
+    @keyframes seed-ring-1 {
+      0% { r: 0; opacity: 0; }
+      15% { opacity: 0.15; }
+      100% { r: 48; opacity: 0.12; }
+    }
+
+    @keyframes seed-ring-2 {
+      0% { r: 0; opacity: 0; }
+      15% { opacity: 0.12; }
+      100% { r: 90; opacity: 0.08; }
+    }
+
+    @keyframes seed-ring-3 {
+      0% { r: 0; opacity: 0; }
+      15% { opacity: 0.08; }
+      100% { r: 140; opacity: 0.05; }
+    }
+
+    .seed-dot {
+      transform-origin: 180px 180px;
+      animation: seed-dot-in 0.8s ease-out forwards;
+    }
+
+    .seed-ring-1 { animation: seed-ring-1 1.5s ease-out 0.4s forwards; }
+    .seed-ring-2 { animation: seed-ring-2 1.5s ease-out 0.9s forwards; }
+    .seed-ring-3 { animation: seed-ring-3 1.5s ease-out 1.4s forwards; }
+
+    .welcome-enter { animation: welcome-fade-up 0.8s ease-out both; }
+    .welcome-gap-lg { height: 36px; }
+    .welcome-gap-sm { height: 24px; }
+
+    @keyframes welcome-fade-up {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .seed-dot, .seed-ring, .welcome-enter { animation: none !important; }
+      .seed-dot { opacity: 0.35; transform: scale(1); }
+      .seed-ring-1 { r: 48; opacity: 0.12; }
+      .seed-ring-2 { r: 90; opacity: 0.08; }
+      .seed-ring-3 { r: 140; opacity: 0.05; }
+    }
+  </style>
+</FlowLayout>

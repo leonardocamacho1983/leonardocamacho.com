@@ -1,0 +1,170 @@
+---
+export const prerender = false;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getNewsletterCopy } from "@/lib/i18n/newsletter";
+import { LOCALES, localizedPath } from "@/lib/locales";
+import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
+import { getSiteSettings } from "@/lib/sanity/api";
+
+const rawLocale = Astro.params.locale;
+const locale = getLocaleOrDefault(rawLocale);
+if (!rawLocale || rawLocale.toLowerCase() !== locale) {
+  return Astro.redirect(localizedPath("en-us", "home"), 302);
+}
+
+const isPreview = isPreviewRequest(Astro.cookies);
+const settings = await getSiteSettings(locale, isPreview);
+const copy = getNewsletterCopy(locale);
+
+const localeLinks = LOCALES.map((item) => ({
+  locale: item.key,
+  label: item.label,
+  flag: item.flag,
+  href: `/${item.key}/newsletter/thanks`,
+  available: true,
+}));
+
+const url = new URL(Astro.request.url);
+const status = url.searchParams.get("status") || "";
+const state = url.searchParams.get("state") || "";
+const confirmationSubject =
+  import.meta.env.NEWSLETTER_CONFIRMATION_SUBJECT ||
+  "Leonardo Camacho Newsletter - Confirm your subscription";
+const identityLine = copy.identityLine || "You are now part of a long-horizon conversation.";
+const confirmLead =
+  copy.confirmChecklistLead || "Open the confirmation email to complete your access.";
+const confirmFutureAnchor = copy.confirmFutureAnchor || "First essay arrives Spring 2026.";
+const confirmHookLead =
+  copy.confirmHookLead || "What we will explore:";
+const confirmHookOne = copy.confirmHookOne || "Compounding advantage";
+const confirmHookTwo = copy.confirmHookTwo || "Dynamic capabilities";
+const confirmHookThree = copy.confirmHookThree || "Strategy beyond the quarter";
+const surveyTitle = copy.surveyTitle || "Help me understand who is building with us";
+const surveyDescription =
+  copy.surveyDescription ||
+  "Four quick fields help me map who is building for the long term.";
+
+const statusMessageByCode: Record<string, string> = {
+  "invalid-email": copy.subscribeErrorLabel,
+  "consent-required": copy.subscribeErrorLabel,
+  "service-unavailable": copy.subscribeErrorLabel,
+  "rate-limited": copy.subscribeErrorLabel,
+  "subscribe-error": copy.subscribeErrorLabel,
+  "invalid-state": copy.profileErrorLabel,
+  "profile-error": copy.profileErrorLabel,
+};
+const statusMessage = statusMessageByCode[status] || "";
+---
+
+<BaseLayout
+  locale={locale}
+  settings={settings}
+  localeLinks={localeLinks}
+  title={`${settings.siteTitle} | ${copy.thanksTitle}`}
+  description={copy.thanksDescription}
+  canonicalPath={`/${locale}/newsletter/thanks`}
+  isPreview={isPreview}
+>
+  <section class="sec-newsletter-thanks">
+    <div class="container">
+      <article class="newsletter-thanks">
+        {status === "subscribed" ? <p class="newsletter-thanks__identity">{identityLine}</p> : null}
+        <h1 class="newsletter-thanks__title">{copy.thanksTitle}</h1>
+        <p class="newsletter-thanks__description">{copy.thanksDescription}</p>
+        {status === "subscribed" ? <p class="newsletter-thanks__note">{copy.thanksInboxNote}</p> : null}
+        {status === "subscribed" ? <p class="newsletter-thanks__quote">{settings.footerQuote}</p> : null}
+        {statusMessage ? <p class="newsletter-thanks__alert">{statusMessage}</p> : null}
+
+        {status === "subscribed" ? (
+          <section class="newsletter-thanks__confirm">
+            <h2 class="newsletter-thanks__confirm-title">{copy.confirmChecklistTitle}</h2>
+            <p class="newsletter-thanks__confirm-lead">{confirmLead}</p>
+            <p class="newsletter-thanks__confirm-subject-label">{copy.confirmSubjectLabel}</p>
+            <p class="newsletter-thanks__confirm-subject">{confirmationSubject}</p>
+            <p class="newsletter-thanks__confirm-copy-hint">{copy.confirmCopyHint}</p>
+            <div class="newsletter-thanks__confirm-ctas">
+              <a
+                class="newsletter-thanks__confirm-cta"
+                href="https://mail.google.com/mail/u/0/#inbox"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {copy.confirmOpenGmailLabel}
+              </a>
+              <a
+                class="newsletter-thanks__confirm-cta"
+                href="https://outlook.live.com/mail/0/inbox"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {copy.confirmOpenOutlookLabel}
+              </a>
+            </div>
+            <p class="newsletter-thanks__confirm-apple-hint">{copy.confirmAppleHint}</p>
+            <ol class="newsletter-thanks__confirm-steps">
+              <li>{copy.confirmStepOne}</li>
+              <li>{copy.confirmStepTwo}</li>
+              <li>{copy.confirmStepThree}</li>
+            </ol>
+            <p class="newsletter-thanks__confirm-future">{confirmFutureAnchor}</p>
+            <p class="newsletter-thanks__confirm-hook-lead">{confirmHookLead}</p>
+            <ul class="newsletter-thanks__confirm-hooks">
+              <li>{confirmHookOne}</li>
+              <li>{confirmHookTwo}</li>
+              <li>{confirmHookThree}</li>
+            </ul>
+          </section>
+        ) : null}
+
+        {state ? (
+          <details class="newsletter-thanks__survey-disclosure">
+            <summary class="newsletter-thanks__survey-toggle">
+              <span class="newsletter-thanks__survey-toggle-label">{copy.confirmRevealSurveyLabel}</span>
+              <span class="newsletter-thanks__survey-toggle-arrow" aria-hidden="true">↘</span>
+            </summary>
+            <p class="newsletter-thanks__survey-toggle-support">{copy.confirmRevealSurveySupport}</p>
+            <div class="newsletter-thanks__survey-wrap">
+              <h2 class="newsletter-thanks__survey-title">{surveyTitle}</h2>
+              <p class="newsletter-thanks__survey-description">{surveyDescription}</p>
+
+              <form class="newsletter-survey" method="POST" action="/api/newsletter/profile">
+                <input type="hidden" name="state" value={state} />
+                <input type="hidden" name="locale" value={locale} />
+
+                <label class="newsletter-survey__field">
+                  <span>{copy.surveyPositionLabel}</span>
+                  <input type="text" name="position" autocomplete="organization-title" />
+                </label>
+
+                <label class="newsletter-survey__field">
+                  <span>{copy.surveyCompanyLabel}</span>
+                  <input type="text" name="company" autocomplete="organization" />
+                </label>
+
+                <label class="newsletter-survey__field">
+                  <span>{copy.surveyTeamSizeLabel}</span>
+                  <input type="number" min="0" step="1" name="team_size" inputmode="numeric" />
+                </label>
+
+                <label class="newsletter-survey__field">
+                  <span>{copy.surveyImpactLabel}</span>
+                  <input type="number" min="0" step="1" name="customer_impact_monthly" inputmode="numeric" />
+                </label>
+
+                <div class="newsletter-survey__actions">
+                  <button class="newsletter-survey__submit" type="submit">{copy.surveySubmitLabel}</button>
+                  <a class="newsletter-survey__skip" href={localizedPath(locale, "writing")}>
+                    {copy.surveySkipLabel}
+                  </a>
+                </div>
+              </form>
+            </div>
+          </details>
+        ) : (
+          <a class="newsletter-survey__skip" href={localizedPath(locale, "writing")}>{copy.surveySkipLabel}</a>
+        )}
+      </article>
+    </div>
+  </section>
+</BaseLayout>

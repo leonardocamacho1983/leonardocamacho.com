@@ -1,0 +1,37 @@
+{
+  "name": "camacho-website",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "seed": "node --env-file=.env scripts/seed-sanity.mjs",
+    "translate:categories": "node --env-file=.env scripts/translate-categories.mjs",
+    "translate:categories:apply": "node --env-file=.env scripts/translate-categories.mjs --apply",
+    "lint:design": "bash scripts/lint-design.sh"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@astrojs/react": "^4.4.0",
+    "@astrojs/vercel": "^8.2.5",
+    "@portabletext/to-html": "^2.0.17",
+    "@sanity/astro": "^3.2.11",
+    "@sanity/client": "^7.8.2",
+    "@sanity/image-url": "^1.2.0",
+    "@sanity/vision": "^4.13.0",
+    "astro": "^5.13.5",
+    "astro-portabletext": "^0.11.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sanity": "^4.13.0",
+    "styled-components": "^6.3.11"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.6",
+    "@types/node": "^22.18.0",
+    "typescript": "^5.9.2"
+  }
+}

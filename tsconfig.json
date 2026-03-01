@@ -1,0 +1,18 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "exclude": [
+    "dist",
+    ".vercel",
+    "node_modules",
+    "src/app",
+    "src/main.tsx",
+    "vite.config.ts",
+    "postcss.config.mjs"
+  ]
+}

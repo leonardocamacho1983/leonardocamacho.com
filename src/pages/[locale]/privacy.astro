@@ -1,0 +1,67 @@
+---
+export const prerender = false;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { LOCALES, localizedPath } from "@/lib/locales";
+import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
+import { getSiteSettings } from "@/lib/sanity/api";
+
+const rawLocale = Astro.params.locale;
+const locale = getLocaleOrDefault(rawLocale);
+if (!rawLocale || rawLocale.toLowerCase() !== locale) {
+  return Astro.redirect(localizedPath("en-us", "home"), 302);
+}
+
+const isPreview = isPreviewRequest(Astro.cookies);
+const settings = await getSiteSettings(locale, isPreview);
+
+const localeLinks = LOCALES.map((item) => ({
+  locale: item.key,
+  label: item.label,
+  flag: item.flag,
+  href: localizedPath(item.key, "privacy"),
+  available: true,
+}));
+---
+
+<BaseLayout
+  locale={locale}
+  settings={settings}
+  localeLinks={localeLinks}
+  title={`${settings.siteTitle} | Privacy Policy`}
+  description="Privacy policy for newsletter subscriptions."
+  canonicalPath={`/${locale}/privacy`}
+  isPreview={isPreview}
+>
+  <section class="sec-privacy">
+    <div class="container">
+      <article class="privacy-card">
+        <h1>Newsletter Privacy Policy</h1>
+        <p>
+          By subscribing, you agree to receive occasional newsletter emails from Leonardo Camacho.
+          You can unsubscribe at any time through the link included in every email.
+        </p>
+
+        <h2>What We Collect</h2>
+        <ul>
+          <li>Email address</li>
+          <li>Language and signup source information</li>
+          <li>Optional profile survey details you provide</li>
+        </ul>
+
+        <h2>How We Use Your Data</h2>
+        <ul>
+          <li>Send newsletter updates and essays</li>
+          <li>Improve editorial relevance by locale and audience profile</li>
+          <li>Measure aggregate content impact</li>
+        </ul>
+
+        <h2>Unsubscribe and Data Requests</h2>
+        <p>
+          You may unsubscribe anytime via the email footer link. For data access, correction, or
+          deletion requests, contact: {settings.contactEmail}.
+        </p>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

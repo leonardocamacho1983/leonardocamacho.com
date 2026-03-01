@@ -1,0 +1,178 @@
+---
+export const prerender = false;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getAboutPage, getSiteSettings } from "@/lib/sanity/api";
+import { urlFor } from "@/lib/sanity/image";
+import { localizedPath } from "@/lib/locales";
+import { getLocaleOrDefault, isPreviewRequest, localeLinksForPath } from "@/lib/page-helpers";
+
+const rawLocale = Astro.params.locale;
+const locale = getLocaleOrDefault(rawLocale);
+if (!rawLocale || rawLocale.toLowerCase() !== locale) {
+  return Astro.redirect(localizedPath("en-us", "home"), 302);
+}
+
+const isPreview = isPreviewRequest(Astro.cookies);
+const [settings, about] = await Promise.all([
+  getSiteSettings(locale, isPreview),
+  getAboutPage(locale, isPreview),
+]);
+
+const pathname = new URL(Astro.request.url).pathname;
+const localeLinks = localeLinksForPath(pathname, locale);
+
+const introImage = about.introImage
+  ? urlFor(about.introImage).width(860).height(980).fit("crop").url()
+  : "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=860&q=80";
+
+const services = Array.isArray(about.services) ? about.services : [];
+const timeline = Array.isArray(about.timeline) ? about.timeline : [];
+const galleryImages = Array.isArray(about.galleryImages) ? about.galleryImages : [];
+
+const gallery = galleryImages.length
+  ? galleryImages.map((image) => ({
+      alt: image.alt || "Gallery image",
+      src: urlFor(image).width(900).height(620).fit("crop").url(),
+    }))
+  : [
+      {
+        src: "https://images.unsplash.com/photo-1461360228754-6e81c478b882?auto=format&fit=crop&w=900&q=80",
+        alt: "Research",
+      },
+      {
+        src: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=900&q=80",
+        alt: "Teaching",
+      },
+      {
+        src: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=80",
+        alt: "Advisory",
+      },
+    ];
+
+const iconMap: Record<string, string> = {
+  target: "◎",
+  users: "⋯",
+  book: "⧉",
+  graduation: "⬢",
+  briefcase: "◧",
+  lightbulb: "◉",
+};
+---
+
+<BaseLayout
+  locale={locale}
+  settings={settings}
+  localeLinks={localeLinks}
+  title={`${settings.siteTitle} | About`}
+  description={about.introParagraphOne}
+  canonicalPath={`/${locale}/about`}
+  isPreview={isPreview}
+>
+  <section class="sec-hero">
+    <div class="container">
+      <a class="back-link" href={localizedPath(locale, "home")}>{about.backToHomeLabel}</a>
+
+      <article class="card about-intro scroll-reveal" data-y="26" data-delay="40">
+        <div class="about-intro__media">
+          <img class="ken-burns-about" src={introImage} alt={settings.siteTitle} loading="eager" width="860" height="980" />
+        </div>
+        <div class="about-intro__content pad-about-hero">
+          <div class="eyebrow-row">
+            <span class="eyebrow-line"></span>
+            <span class="eyebrow-label">{about.introKicker}</span>
+          </div>
+          <h2 class="about-intro__title">
+            {about.introTitle} <em>{about.introTitleEmphasis}</em>
+          </h2>
+          <p>{about.introParagraphOne}</p>
+          <p>{about.introParagraphTwo}</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="sec-about-teaser">
+    <div class="container">
+      <article class="about-teaser about-teaser--flush scroll-reveal" data-y="28" data-delay="80">
+        <div class="accent-column" aria-hidden="true">
+          <span class="accent-column__line"></span>
+          <span class="accent-column__dot"></span>
+        </div>
+        <div>
+          <div class="eyebrow-row">
+            <span class="eyebrow-label eyebrow-label--accent">{about.beliefKicker}</span>
+          </div>
+          <blockquote class="quote-block">&ldquo;{about.beliefQuote}&rdquo;</blockquote>
+          <p class="copy">{about.beliefBody}</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="sec-featured">
+    <div class="container">
+      <div class="eyebrow-row eyebrow-row--spaced scroll-reveal" data-y="20" data-delay="60">
+        <span class="eyebrow-line"></span>
+        <span class="eyebrow-label">{about.whatIDoKicker}</span>
+      </div>
+      <div class="services-grid gap-services">
+        {services.map((service, index) => (
+          <article class="card service-card pad-about-service scroll-reveal" data-y="24" data-delay={100 + index * 60}>
+            <div class="service-card__icon">{iconMap[service.icon] || "•"}</div>
+            <h3>{service.title}</h3>
+            <p>{service.description}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="sec-featured">
+    <div class="container">
+      <div class="eyebrow-row eyebrow-row--spaced scroll-reveal" data-y="20" data-delay="60">
+        <span class="eyebrow-line"></span>
+        <span class="eyebrow-label">{about.careerPathKicker}</span>
+      </div>
+      <div class="timeline">
+        {timeline.map((item, index) => (
+          <article class={`timeline-item scroll-reveal ${item.highlight ? "is-highlight" : ""}`} data-y="22" data-delay={100 + index * 40}>
+            <span class="timeline-item__dot" aria-hidden="true"></span>
+            <div>
+              <p class="timeline-item__period">{item.period}</p>
+              <h3 class="timeline-item__title">{item.title}</h3>
+              <p class="timeline-item__description">{item.description}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="sec-featured">
+    <div class="container">
+      <div class="gallery-strip scroll-reveal" data-y="20" data-delay="80">
+        {gallery.map((image) => (
+          <img src={image.src} alt={image.alt} loading="lazy" width="900" height="620" />
+        ))}
+      </div>
+      <p class="gallery-strip__caption">{about.galleryCaption}</p>
+    </div>
+  </section>
+
+  <section class="sec-footer">
+    <div class="container">
+      <article class="card connect-card pad-about-cta scroll-reveal" data-y="26" data-delay="90">
+        <div class="connect-card__icon">✉</div>
+        <h3>
+          {about.connectTitle} <em>{about.connectTitleEmphasis}</em>
+        </h3>
+        <p>{about.connectDescription}</p>
+        <div class="connect-card__actions">
+          <a class="button-primary" href={about.connectPrimaryUrl}>{about.connectPrimaryLabel}</a>
+          <a class="button-secondary" href={localizedPath(locale, about.connectSecondaryRoute)}>{about.connectSecondaryLabel}</a>
+        </div>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

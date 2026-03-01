@@ -1,0 +1,463 @@
+---
+export const prerender = false;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { formatMonthYear, formatReadTime } from "@/lib/format";
+import { categoryLabel, categoryToneClass } from "@/lib/category-style";
+import { getNewsletterCopy } from "@/lib/i18n/newsletter";
+import { localizedPath } from "@/lib/locales";
+import { getLocaleOrDefault, isPreviewRequest, localeLinksForPath } from "@/lib/page-helpers";
+import { getCategories, getPosts, getSiteSettings, getWritingPage } from "@/lib/sanity/api";
+import { urlFor } from "@/lib/sanity/image";
+import type { PostCardDTO } from "@/lib/types";
+
+const rawLocale = Astro.params.locale;
+const locale = getLocaleOrDefault(rawLocale);
+if (!rawLocale || rawLocale.toLowerCase() !== locale) {
+  return Astro.redirect(localizedPath("en-us", "home"), 302);
+}
+
+const isPreview = isPreviewRequest(Astro.cookies);
+const [settings, page, categories, posts] = await Promise.all([
+  getSiteSettings(locale, isPreview),
+  getWritingPage(locale, isPreview),
+  getCategories(locale, isPreview),
+  getPosts(locale, isPreview),
+]);
+
+const pathname = new URL(Astro.request.url).pathname;
+const localeLinks = localeLinksForPath(pathname, locale);
+const newsletterCopy = getNewsletterCopy(locale);
+const privacyUrl = localizedPath(locale, "privacy");
+const featuredPosts = posts.filter((post) => post.featuredInArchive).slice(0, 2);
+
+const fallbackArchiveCoverBySlug: Record<string, string> = {
+  "architecture-durable-companies":
+    "https://images.unsplash.com/photo-1581682101370-fafc58e0f387?auto=format&fit=crop&w=1200&q=80",
+  "patterns-founders-lose-clarity":
+    "https://images.unsplash.com/photo-1702893752663-bf8054648f42?auto=format&fit=crop&w=1200&q=80",
+  "framework-organizational-adaptability":
+    "https://images.unsplash.com/photo-1758055660837-6889c3cb3898?auto=format&fit=crop&w=960&q=80",
+  "compound-effect-organizational-culture":
+    "https://images.unsplash.com/photo-1771752736847-2facaa2c4f81?auto=format&fit=crop&w=960&q=80",
+  "second-curve-problem":
+    "https://images.unsplash.com/photo-1766802981831-8baf453bb1ee?auto=format&fit=crop&w=960&q=80",
+};
+
+const imageForPost = (post: PostCardDTO, width: number, height: number): string => {
+  if (post.coverImage) {
+    return urlFor(post.coverImage).width(width).height(height).fit("crop").url();
+  }
+  return fallbackArchiveCoverBySlug[post.slug] || "";
+};
+
+const searchTextForPost = (post: PostCardDTO): string =>
+  `${post.title} ${post.titleEmphasis || ""} ${post.excerpt}`.toLowerCase();
+
+const coverStory = featuredPosts[0] || null;
+const secondFeature = featuredPosts[1] || null;
+
+const remainingPosts = posts.filter((post) => post.id !== coverStory?.id && post.id !== secondFeature?.id);
+
+const hasVisualAsset = (post: PostCardDTO): boolean => Boolean(post.coverImage || fallbackArchiveCoverBySlug[post.slug]);
+
+const visualPosts = remainingPosts.filter(hasVisualAsset);
+const textPosts = remainingPosts.filter((post) => !hasVisualAsset(post));
+
+const headingSource = (page.archiveKicker || `${page.archiveTitle} ${page.archiveTitleEmphasis}`).trim();
+const headingParts = headingSource.split(/\s+/).filter(Boolean);
+const headingLead = headingParts.length > 1 ? headingParts.slice(0, -1).join(" ") : headingSource;
+const headingEmphasis = headingParts.length > 1 ? headingParts[headingParts.length - 1] : "";
+
+const homeLabel = settings.navigation.find((item) => item.route === "home")?.label || "Home";
+const coverImage = coverStory ? imageForPost(coverStory, 1200, 760) : "";
+const spreadImage = secondFeature ? imageForPost(secondFeature, 1200, 760) : "";
+const articleCountLabel = locale.startsWith("pt-")
+  ? "Artigos"
+  : posts.length === 1
+    ? "article"
+    : "articles";
+---
+
+<BaseLayout
+  locale={locale}
+  settings={settings}
+  localeLinks={localeLinks}
+  title={`${settings.siteTitle} | ${headingSource}`}
+  description={page.archiveDescription}
+  canonicalPath={`/${locale}/writing`}
+  isPreview={isPreview}
+>
+  <section class="sec-writing-archive">
+    <div class="container archive-shell">
+      <a class="archive-home-link" href={localizedPath(locale, "home")}>{homeLabel}</a>
+
+      <header class="archive-masthead scroll-reveal" data-y="24" data-delay="40">
+        <div class="archive-masthead__intro">
+          <div class="eyebrow-row archive-signature">
+            <span class="eyebrow-line"></span>
+            <span class="eyebrow-label">{settings.siteTitle}</span>
+          </div>
+          <h2 class="archive-hero-title">
+            {headingLead}
+            {headingEmphasis ? <><span> </span><em>{headingEmphasis}</em></> : null}
+          </h2>
+          <p class="archive-masthead__description">{page.archiveDescription}</p>
+          <div class="archive-masthead__rule" aria-hidden="true">
+            <span class="archive-masthead__rule-main"></span>
+            <span class="archive-masthead__rule-sub"></span>
+          </div>
+        </div>
+        <div class="archive-masthead__count">
+          <strong id="archive-count" data-total={posts.length}>{posts.length}</strong>
+          <span>{articleCountLabel}</span>
+        </div>
+      </header>
+
+      <div id="archive-nav" class="archive-nav scroll-reveal" data-y="24" data-delay="80">
+        <div class="archive-nav__row">
+          <div class="archive-tablist" role="tablist" aria-label="Categories">
+            <button class="archive-tab is-active" data-filter="all" type="button">{page.allFilterLabel}</button>
+            {categories.map((category) => (
+              <button class="archive-tab" type="button" data-filter={category.slug}>{category.title}</button>
+            ))}
+          </div>
+          <div class="archive-search-group">
+            <div id="archive-search-panel" class="archive-search-panel">
+              <input
+                id="archive-search"
+                class="archive-search-inline"
+                type="search"
+                placeholder={page.searchPlaceholder}
+                aria-label={page.searchPlaceholder}
+              />
+              <button id="archive-search-clear" class="archive-search-inline-clear is-hidden" type="button">Clear</button>
+            </div>
+            <button id="archive-search-toggle" class="archive-search-toggle" type="button" aria-label="Toggle search" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle>
+                <path d="M20 20L16.65 16.65" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <span class="archive-nav__line" aria-hidden="true"></span>
+      </div>
+
+      <div id="archive-empty" class="archive-empty-state is-hidden">
+        <span class="archive-empty__dash">&mdash;</span>
+        <h3 class="archive-empty__title">{page.emptyStateTitle}</h3>
+        <p class="archive-empty__description">{page.emptyStateDescription}</p>
+      </div>
+
+      <div id="archive-editorial" class={`archive-editorial ${coverStory || secondFeature ? "" : "is-hidden"}`}>
+        {coverStory ? (
+          <article id="archive-cover" class="archive-cover scroll-reveal" data-y="28" data-delay="100">
+            <a class="archive-cover__media" href={localizedPath(locale, "post", coverStory.slug)}>
+              <img src={coverImage} alt={coverStory.title} loading="lazy" width="1200" height="760" />
+              <span class="archive-cover__overlay" aria-hidden="true"></span>
+              <span class="archive-cover__frame" aria-hidden="true"></span>
+            </a>
+            <div class="archive-cover__content">
+              <div class="archive-cover__kicker-row">
+                <span class={`archive-category ${categoryToneClass(coverStory.category?.slug)}`}>{categoryLabel(coverStory.category)}</span>
+                <span class="archive-cover__separator">&mdash;</span>
+                <span class="archive-cover__readtime">A {formatReadTime(coverStory.readTimeMinutes)} read</span>
+              </div>
+              <h3 class="archive-cover__title">
+                <a href={localizedPath(locale, "post", coverStory.slug)}>
+                  {coverStory.title}
+                  {coverStory.titleEmphasis ? <><br /><em>{coverStory.titleEmphasis}</em></> : null}
+                </a>
+              </h3>
+              <p class="archive-cover__excerpt">{coverStory.excerpt}</p>
+              <a class="archive-cover__cta arrow-link" href={localizedPath(locale, "post", coverStory.slug)}>
+                <span>Read the essay</span>
+                <span class="arrow" aria-hidden="true">→</span>
+              </a>
+            </div>
+          </article>
+        ) : null}
+
+        <article id="archive-newsletter" class="archive-newsletter scroll-reveal" data-y="22" data-delay="120">
+          <div class="archive-newsletter__inner">
+            <div class="archive-newsletter__mark" aria-hidden="true">
+              <span class="archive-newsletter__mark-line"></span>
+              <svg viewBox="0 0 24 24" class="archive-newsletter__mark-icon">
+                <rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"></rect>
+                <path d="M4 7L12 13L20 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span class="archive-newsletter__mark-line"></span>
+            </div>
+            <h3 class="archive-newsletter__title">
+              {newsletterCopy.writingTitleLead} <em>{newsletterCopy.writingTitleEmphasis}</em>
+            </h3>
+            <p class="archive-newsletter__copy">
+              {newsletterCopy.writingDescription}
+            </p>
+            <form class="archive-newsletter__form" method="POST" action="/api/newsletter/subscribe">
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="source" value="writing" />
+              <input type="hidden" name="path" value={pathname} />
+              <input class="archive-newsletter__input" type="email" name="email" placeholder={newsletterCopy.emailPlaceholder} required />
+              <button class="archive-newsletter__submit" type="submit">{newsletterCopy.subscribeButton}</button>
+            </form>
+            <p class="archive-newsletter__consent-note">
+              By subscribing I agree to receive the newsletter and accept the{" "}
+              <a href={privacyUrl}>privacy policy</a>.
+            </p>
+            <p class="archive-newsletter__note">{newsletterCopy.unsubscribeNote}</p>
+          </div>
+        </article>
+
+        {secondFeature ? (
+          <article id="archive-spread" class="archive-spread scroll-reveal" data-y="24" data-delay="140">
+            <a class="archive-spread__media" href={localizedPath(locale, "post", secondFeature.slug)}>
+              <img src={spreadImage} alt={secondFeature.title} loading="lazy" width="1200" height="760" />
+              <span class="archive-spread__media-overlay" aria-hidden="true"></span>
+            </a>
+            <div class="archive-spread__content">
+              <div class="archive-spread__kicker-row">
+                <span class={`archive-category ${categoryToneClass(secondFeature.category?.slug)}`}>{categoryLabel(secondFeature.category)}</span>
+                <span class="archive-spread__separator">&mdash;</span>
+                <span class="archive-spread__featured-label">Featured</span>
+              </div>
+              <h3 class="archive-spread__title">
+                <a href={localizedPath(locale, "post", secondFeature.slug)}>
+                  {secondFeature.title} {secondFeature.titleEmphasis ? <em>{secondFeature.titleEmphasis}</em> : null}
+                </a>
+              </h3>
+              <p class="archive-spread__excerpt">{secondFeature.excerpt}</p>
+              <div class="archive-spread__meta">
+                <span class="archive-spread__meta-item">{formatMonthYear(secondFeature.publishedAt, locale)}</span>
+                <span class="archive-spread__meta-divider">&middot;</span>
+                <span class="archive-spread__meta-item">{formatReadTime(secondFeature.readTimeMinutes)}</span>
+              </div>
+            </div>
+          </article>
+        ) : null}
+      </div>
+
+      <section id="archive-section-head" class={`archive-section-head ${remainingPosts.length ? "" : "is-hidden"}`}>
+        <div class="archive-section-head__row">
+          <h4 id="archive-section-label" class="archive-section-head__label">Continue reading</h4>
+          <span class="archive-section-head__line" aria-hidden="true"></span>
+        </div>
+      </section>
+
+      <div id="archive-visual-wrap" class={`archive-visual-wrap ${visualPosts.length ? "" : "is-hidden"}`}>
+        <div class="archive-visual-grid gap-writing-grid">
+          {visualPosts.map((post, index) => {
+            const image = imageForPost(post, 960, 620);
+            const searchText = searchTextForPost(post);
+
+            return (
+              <article
+                class="card archive-visual-card archive-item scroll-reveal"
+                data-kind="visual"
+                data-category={post.category?.slug || "uncategorized"}
+                data-search={searchText}
+                data-y="24"
+                data-delay={160 + index * 40}
+              >
+                <a class="archive-visual-card__media" href={localizedPath(locale, "post", post.slug)}>
+                  <img src={image} alt={post.title} loading="lazy" width="960" height="620" />
+                  <span class="archive-visual-card__media-overlay" aria-hidden="true"></span>
+                </a>
+                <div class="archive-visual-card__body pad-writing-regular">
+                  <div class="archive-visual-card__category-row">
+                    <span class={`archive-visual-card__category-dot ${categoryToneClass(post.category?.slug)}`}></span>
+                    <span class={`archive-visual-card__category ${categoryToneClass(post.category?.slug)}`}>{categoryLabel(post.category)}</span>
+                  </div>
+
+                  <h3 class="archive-visual-card__title">
+                    <a href={localizedPath(locale, "post", post.slug)}>
+                      {post.title} {post.titleEmphasis ? <em>{post.titleEmphasis}</em> : null}
+                    </a>
+                  </h3>
+
+                  <p class="archive-visual-card__excerpt">{post.excerpt}</p>
+
+                  <div class="archive-visual-card__footer">
+                    <span>{formatMonthYear(post.publishedAt, locale)}</span>
+                    <span>{formatReadTime(post.readTimeMinutes)}</span>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+
+      <div id="archive-text-wrap" class={`archive-text-wrap ${textPosts.length ? "" : "is-hidden"}`}>
+        <div class="archive-text-list">
+          {textPosts.map((post, index) => {
+            const searchText = searchTextForPost(post);
+
+            return (
+              <article
+                class="archive-text-item archive-item scroll-reveal"
+                data-kind="text"
+                data-category={post.category?.slug || "uncategorized"}
+                data-search={searchText}
+                data-y="18"
+                data-delay={220 + index * 28}
+              >
+                <a class="archive-text-item__link" href={localizedPath(locale, "post", post.slug)}>
+                  <span class="archive-text-item__index">{String(index + 1).padStart(2, "0")}</span>
+                  <span class="archive-text-item__body">
+                    <span class="archive-text-item__title">
+                      {post.title} {post.titleEmphasis ? <em>{post.titleEmphasis}</em> : null}
+                    </span>
+                    <span class="archive-text-item__excerpt">{post.excerpt}</span>
+                  </span>
+                  <span class="archive-text-item__meta">
+                    <span class={`archive-text-item__category ${categoryToneClass(post.category?.slug)}`}>{categoryLabel(post.category)}</span>
+                    <span class="archive-text-item__readtime">{formatReadTime(post.readTimeMinutes)}</span>
+                  </span>
+                </a>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+
+      <div id="archive-closing" class="archive-closing scroll-reveal" data-y="14" data-delay="80">
+        <div class="archive-closing__mark" aria-hidden="true">
+          <span class="archive-closing__line"></span>
+          <span class="archive-closing__dash">&mdash;</span>
+          <span class="archive-closing__line"></span>
+        </div>
+        <p class="archive-closing__text">
+          New essays are published roughly once a month.
+          <br />
+          The best ones take longer.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const archiveNav = document.querySelector("#archive-nav") as HTMLElement | null;
+    const searchInput = document.querySelector("#archive-search") as HTMLInputElement | null;
+    const searchToggle = document.querySelector("#archive-search-toggle") as HTMLButtonElement | null;
+    const clearButton = document.querySelector("#archive-search-clear") as HTMLButtonElement | null;
+    const chips = [...document.querySelectorAll<HTMLButtonElement>(".archive-tab")];
+    const items = [...document.querySelectorAll<HTMLElement>(".archive-item")];
+
+    const emptyState = document.querySelector("#archive-empty") as HTMLElement | null;
+    const editorial = document.querySelector("#archive-editorial") as HTMLElement | null;
+    const visualWrap = document.querySelector("#archive-visual-wrap") as HTMLElement | null;
+    const textWrap = document.querySelector("#archive-text-wrap") as HTMLElement | null;
+    const sectionHead = document.querySelector("#archive-section-head") as HTMLElement | null;
+    const sectionLabel = document.querySelector("#archive-section-label") as HTMLElement | null;
+    const closing = document.querySelector("#archive-closing") as HTMLElement | null;
+    const counter = document.querySelector("#archive-count") as HTMLElement | null;
+
+    const totalCount = Number.parseInt(counter?.dataset.total || String(items.length), 10) || items.length;
+
+    let activeFilter = "all";
+
+    const applyFilters = () => {
+      const search = (searchInput?.value || "").toLowerCase().trim();
+      const isFiltering = activeFilter !== "all" || search.length > 0;
+
+      let visibleCount = 0;
+      let visualCount = 0;
+      let textCount = 0;
+
+      items.forEach((item) => {
+        const category = item.dataset.category || "";
+        const text = item.dataset.search || "";
+        const kind = item.dataset.kind || "text";
+
+        const matchesCategory = activeFilter === "all" || category === activeFilter;
+        const matchesSearch = !search || text.includes(search);
+        const visible = matchesCategory && matchesSearch;
+
+        item.classList.toggle("is-hidden", !visible);
+
+        if (visible) {
+          visibleCount += 1;
+          if (kind === "visual") {
+            visualCount += 1;
+          } else {
+            textCount += 1;
+          }
+        }
+      });
+
+      editorial?.classList.toggle("is-hidden", isFiltering);
+      closing?.classList.toggle("is-hidden", isFiltering);
+
+      visualWrap?.classList.toggle("is-hidden", visualCount === 0);
+      textWrap?.classList.toggle("is-hidden", textCount === 0);
+
+      const hasAnyResults = visibleCount > 0;
+      sectionHead?.classList.toggle("is-hidden", !hasAnyResults);
+      if (sectionLabel) {
+        sectionLabel.textContent = isFiltering ? "Results" : "Continue reading";
+      }
+
+      emptyState?.classList.toggle("is-hidden", !isFiltering || hasAnyResults);
+      emptyState?.classList.toggle("is-visible", isFiltering && !hasAnyResults);
+
+      clearButton?.classList.toggle("is-hidden", search.length === 0);
+
+      if (counter) {
+        counter.textContent = String(isFiltering ? visibleCount : totalCount);
+      }
+    };
+
+    searchToggle?.addEventListener("click", () => {
+      if (!archiveNav || !searchInput) {
+        return;
+      }
+
+      const isOpen = archiveNav.classList.toggle("is-search-open");
+      searchToggle.setAttribute("aria-expanded", String(isOpen));
+
+      if (isOpen) {
+        searchInput.focus();
+      } else {
+        searchInput.value = "";
+        applyFilters();
+      }
+    });
+
+    chips.forEach((chip) => {
+      chip.addEventListener("click", () => {
+        activeFilter = chip.dataset.filter || "all";
+        chips.forEach((button) => button.classList.remove("is-active"));
+        chip.classList.add("is-active");
+        applyFilters();
+      });
+    });
+
+    searchInput?.addEventListener("input", applyFilters);
+
+    searchInput?.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        if (archiveNav) {
+          archiveNav.classList.remove("is-search-open");
+        }
+        if (searchToggle) {
+          searchToggle.setAttribute("aria-expanded", "false");
+        }
+        searchInput.value = "";
+        applyFilters();
+      }
+    });
+
+    clearButton?.addEventListener("click", () => {
+      if (!searchInput) {
+        return;
+      }
+      searchInput.value = "";
+      applyFilters();
+      searchInput.focus();
+    });
+
+    applyFilters();
+  </script>
+</BaseLayout>

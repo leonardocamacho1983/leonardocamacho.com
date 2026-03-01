@@ -1,0 +1,49 @@
+---
+export const prerender = false;
+
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getNewsletterCopy } from "@/lib/i18n/newsletter";
+import { LOCALES, localizedPath } from "@/lib/locales";
+import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
+import { getSiteSettings } from "@/lib/sanity/api";
+
+const rawLocale = Astro.params.locale;
+const locale = getLocaleOrDefault(rawLocale);
+if (!rawLocale || rawLocale.toLowerCase() !== locale) {
+  return Astro.redirect(localizedPath("en-us", "home"), 302);
+}
+
+const isPreview = isPreviewRequest(Astro.cookies);
+const settings = await getSiteSettings(locale, isPreview);
+const copy = getNewsletterCopy(locale);
+
+const localeLinks = LOCALES.map((item) => ({
+  locale: item.key,
+  label: item.label,
+  flag: item.flag,
+  href: `/${item.key}/newsletter/unsubscribed`,
+  available: true,
+}));
+---
+
+<BaseLayout
+  locale={locale}
+  settings={settings}
+  localeLinks={localeLinks}
+  title={`${settings.siteTitle} | ${copy.unsubscribedTitle}`}
+  description={copy.unsubscribedDescription}
+  canonicalPath={`/${locale}/newsletter/unsubscribed`}
+  isPreview={isPreview}
+>
+  <section class="sec-newsletter-thanks">
+    <div class="container">
+      <article class="newsletter-thanks">
+        <h1 class="newsletter-thanks__title">{copy.unsubscribedTitle}</h1>
+        <p class="newsletter-thanks__description">{copy.unsubscribedDescription}</p>
+        <a class="newsletter-survey__skip" href={localizedPath(locale, "writing")}>
+          {copy.surveySkipLabel}
+        </a>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

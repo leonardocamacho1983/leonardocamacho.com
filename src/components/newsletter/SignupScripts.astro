@@ -1,0 +1,117 @@
+<script is:inline>
+  const resolveKitLocale = (path) => {
+    if (path.startsWith('/pt-br')) return 'pt_BR';
+    if (path.startsWith('/pt-pt') || path.startsWith('/pt/')) return 'pt_PT';
+    if (path.startsWith('/fr-fr') || path.startsWith('/fr/')) return 'fr_FR';
+    if (path.startsWith('/en-gb')) return 'en_UK';
+    return 'en_US';
+  };
+
+  const attachLaunchSignupForm = () => {
+    const launchForm = document.getElementById('launchSignupForm');
+    if (!launchForm) return;
+
+    launchForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const emailInput = launchForm.querySelector('input[type="email"]');
+      const btn = launchForm.querySelector('button[type="submit"]');
+      const errorEl = document.getElementById('launchError');
+      const formWrap = document.getElementById('launchFormWrap');
+      const successWrap = document.getElementById('launchSuccess');
+      if (!emailInput || !btn) return;
+
+      const email = emailInput.value.trim();
+      const kitLocale = launchForm.dataset.kitLocale || resolveKitLocale(window.location.pathname);
+      const welcomePath = launchForm.dataset.welcomePath || '/welcome';
+      const revealDelay = Number(launchForm.dataset.revealDelayMs || '1400');
+      const originalText = btn.textContent;
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      if (errorEl) errorEl.textContent = '';
+
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            locale: kitLocale,
+            source: 'launch-mode',
+            path: window.location.pathname,
+          }),
+        });
+
+        if (res.ok) {
+          formWrap?.classList.add('is-hidden');
+          successWrap?.classList.add('is-visible');
+          window.setTimeout(() => {
+            window.location.href = welcomePath;
+          }, revealDelay);
+          return;
+        }
+
+        if (errorEl) errorEl.textContent = 'Something went wrong. Please try again.';
+      } catch {
+        if (errorEl) errorEl.textContent = 'Something went wrong. Please try again.';
+      }
+
+      btn.textContent = originalText;
+      btn.disabled = false;
+    });
+  };
+
+  const attachHomeSignupForm = () => {
+    const homeForm = document.getElementById('signupForm');
+    if (!homeForm) return;
+
+    homeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const emailInput = homeForm.querySelector('input[type="email"]');
+      const btn = homeForm.querySelector('button[type="submit"]');
+      if (!emailInput || !btn) return;
+
+      const email = emailInput.value.trim();
+      const originalText = btn.textContent;
+      const path = window.location.pathname;
+      const locale = resolveKitLocale(path);
+
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            locale,
+            source: 'home',
+            path,
+          }),
+        });
+
+        if (res.ok) {
+          const prefix = path.startsWith('/pt-br') ? '/pt-br'
+                       : path.startsWith('/pt-pt') || path.startsWith('/pt/') ? '/pt'
+                       : path.startsWith('/fr-fr') || path.startsWith('/fr/') ? '/fr'
+                       : '';
+          window.location.href = `${prefix}/welcome`;
+        } else {
+          btn.textContent = 'TRY AGAIN';
+          btn.disabled = false;
+          setTimeout(() => { btn.textContent = originalText; }, 2000);
+        }
+      } catch {
+        btn.textContent = 'TRY AGAIN';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = originalText; }, 2000);
+      }
+    });
+  };
+
+  attachLaunchSignupForm();
+  attachHomeSignupForm();
+</script>

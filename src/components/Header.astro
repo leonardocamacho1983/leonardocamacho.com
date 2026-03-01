@@ -1,0 +1,135 @@
+---
+import type { LocaleKey } from "@/lib/locales";
+import { LOCALES, localizedPath } from "@/lib/locales";
+import type { LocaleLinkDTO, SiteSettingsDTO } from "@/lib/types";
+
+interface Props {
+  locale: LocaleKey;
+  settings: SiteSettingsDTO;
+  localeLinks: LocaleLinkDTO[];
+}
+
+const { locale, settings, localeLinks } = Astro.props;
+
+const currentLocaleMeta = LOCALES.find((item) => item.key === locale) || LOCALES[0];
+
+const resolvedLanguageOptions =
+  settings.languageOptions?.length > 0
+    ? settings.languageOptions.map((option) => ({
+        ...option,
+        href:
+          localeLinks.find((link) => link.locale === option.locale)?.href ||
+          localizedPath(option.locale, "home"),
+      }))
+    : localeLinks;
+
+const formatLanguageOption = (option: { locale: LocaleKey; label: string; flag: string; href: string }) => {
+  const regionMatch = option.label.match(/\(([^)]+)\)/);
+  const region = (regionMatch ? regionMatch[1] : option.locale.split("-")[1] || "").toUpperCase();
+  const label = option.label.replace(/\s*\([^)]*\)\s*/g, "").trim();
+  const group = option.locale.split("-")[0];
+
+  return {
+    ...option,
+    label,
+    region,
+    group,
+  };
+};
+
+const decoratedLanguageOptions = resolvedLanguageOptions.map(formatLanguageOption);
+
+const getHrefFromRoute = (route: "home" | "about" | "writing") => localizedPath(locale, route);
+---
+
+<header class="site-header">
+  <div class="container site-header__inner">
+    <div class="site-header__row">
+      <button class="mobile-toggle" data-mobile-toggle aria-expanded="false" aria-controls="mobile-nav" aria-label="Toggle navigation menu">
+        <span class="mobile-toggle__bars">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+
+      <nav class="site-nav" aria-label="Main">
+        {settings.navigation.map((item) => (
+          <a class="site-nav__link" href={getHrefFromRoute(item.route)}>{item.label}</a>
+        ))}
+      </nav>
+
+      <a class="site-brand" href={localizedPath(locale, "home")}>
+        <h1 class="site-brand__title">{settings.siteTitle}</h1>
+        <p class="site-brand__subtitle">{settings.siteSubtitle}</p>
+      </a>
+
+      <div class="header-controls">
+        <div class="language-switch" data-language-switch>
+          <button
+            class="language-switch__trigger"
+            type="button"
+            data-language-trigger
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-label="Switch language"
+          >
+            <span class="language-switch__flag">{currentLocaleMeta.flag}</span>
+            <span class="language-switch__caret" aria-hidden="true">
+              <svg viewBox="0 0 10 10" focusable="false" aria-hidden="true">
+                <path d="M2.5 3.5L5 6L7.5 3.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </span>
+          </button>
+          <div class="language-switch__menu" role="menu" data-language-menu>
+            <div class="language-switch__menu-head">
+              <span>Language</span>
+            </div>
+            <div class="language-switch__menu-list">
+              {decoratedLanguageOptions.map((option, index) => {
+                const previous = decoratedLanguageOptions[index - 1];
+                const showSeparator = Boolean(previous && previous.group !== option.group);
+
+                return (
+                  <>
+                    {showSeparator ? <div class="language-switch__separator" aria-hidden="true"></div> : null}
+                    <a
+                      class="language-switch__option"
+                      href={option.href}
+                      role="menuitem"
+                      aria-current={option.locale === locale ? "true" : "false"}
+                    >
+                      <span class="language-switch__option-flag">{option.flag}</span>
+                      <span class="language-switch__option-label">{option.label}</span>
+                      <span class="language-switch__option-region">{option.region}</span>
+                    </a>
+                  </>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle theme" role="switch" aria-checked="false">
+          <span class="theme-toggle__thumb">
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <circle cx="8" cy="8" r="3.4" fill="currentColor" />
+              <path d="M8 1.2V3M8 13V14.8M1.2 8H3M13 8H14.8M3.1 3.1L4.3 4.3M11.7 11.7L12.9 12.9M3.1 12.9L4.3 11.7M11.7 4.3L12.9 3.1" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            </svg>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path d="M12.5 9.5A5.5 5.5 0 0 1 6.5 3.5 5.5 5.5 0 1 0 12.5 9.5Z" fill="currentColor" />
+            </svg>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile">
+      <div class="mobile-nav__inner">
+        {settings.navigation.map((item) => (
+          <a href={getHrefFromRoute(item.route)}>{item.label}</a>
+        ))}
+      </div>
+    </nav>
+  </div>
+</header>

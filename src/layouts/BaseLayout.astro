@@ -1,0 +1,92 @@
+---
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { mapHtmlLang } from "@/lib/format";
+import type { LocaleKey } from "@/lib/locales";
+import type { LocaleLinkDTO, SiteSettingsDTO } from "@/lib/types";
+import { absoluteUrl } from "@/lib/seo";
+import "@/styles/tokens.css";
+import "@/styles/base.css";
+import "@/styles/layout.css";
+import "@/styles/components.css";
+
+interface Props {
+  locale: LocaleKey;
+  settings: SiteSettingsDTO;
+  localeLinks: LocaleLinkDTO[];
+  title?: string;
+  description?: string;
+  canonicalPath: string;
+  isPreview?: boolean;
+}
+
+const {
+  locale,
+  settings,
+  localeLinks,
+  title,
+  description,
+  canonicalPath,
+  isPreview = false,
+} = Astro.props;
+
+const pageTitle = title || settings.seoTitle;
+const pageDescription = description || settings.seoDescription;
+const canonicalUrl = absoluteUrl(canonicalPath);
+const ogImage = settings.seoImage ? absoluteUrl(`/api/og?locale=${locale}`) : undefined;
+const htmlLang = mapHtmlLang(locale);
+---
+
+<!doctype html>
+<html lang={htmlLang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <link rel="canonical" href={canonicalUrl} />
+    {localeLinks.map((link) => (
+      <link rel="alternate" hreflang={mapHtmlLang(link.locale)} href={absoluteUrl(link.href)} />
+    ))}
+    <link rel="alternate" hreflang="x-default" href={absoluteUrl(localeLinks[0]?.href || canonicalPath)} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    {ogImage ? <meta property="og:image" content={ogImage} /> : null}
+    <script is:inline>
+      (() => {
+        try {
+          const root = document.documentElement;
+          const stored = localStorage.getItem("theme");
+          if (stored === "dark" || stored === "light") {
+            root.setAttribute("data-theme", stored);
+            return;
+          }
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          root.setAttribute("data-theme", prefersDark ? "dark" : "light");
+        } catch {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <Header locale={locale} settings={settings} localeLinks={localeLinks} />
+      <main>
+        {isPreview ? (
+          <div class="container sec-header">
+            <div class="preview-chip">
+              <span>Preview Mode Enabled</span>
+              <a href="/api/exit-preview">Exit</a>
+            </div>
+          </div>
+        ) : null}
+        <slot />
+      </main>
+      <Footer settings={settings} />
+    </div>
+    <script is:inline defer src="/js/microanim.js"></script>
+  </body>
+</html>

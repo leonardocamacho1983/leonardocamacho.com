@@ -1,0 +1,25 @@
+---
+import type { SiteSettingsDTO } from "@/lib/types";
+
+interface Props {
+  settings: SiteSettingsDTO;
+}
+
+const { settings } = Astro.props;
+---
+
+<footer class="site-footer sec-footer">
+  <div class="container">
+    <p class="site-footer__quote">{settings.footerQuote}</p>
+    <div class="site-footer__row">
+      <span>{settings.copyrightLine}</span>
+      <nav class="site-footer__links" aria-label="Social links">
+        {settings.footerLinks.map((link) => (
+          <a href={link.url} target={link.url.startsWith("http") ? "_blank" : undefined} rel={link.url.startsWith("http") ? "noreferrer" : undefined}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
+    </div>
+  </div>
+</footer>

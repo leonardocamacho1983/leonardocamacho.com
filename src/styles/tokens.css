@@ -1,0 +1,389 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap");
+
+:root {
+  --font-body: "Inter", sans-serif;
+  --font-display: "Playfair Display", serif;
+
+  --weight-regular: 400;
+  --weight-title: 500;
+  --weight-label: 600;
+
+  --container-max: 960px;
+  --container-pad-mobile: 20px;
+  --container-pad-desktop: 32px;
+
+  --text-8-5: 8.5px;
+  --text-9: 9px;
+  --text-10: 10px;
+  --text-10-5: 10.5px;
+  --text-11: 11px;
+  --text-12: 12px;
+  --text-13: 13px;
+  --text-13-5: 13.5px;
+  --text-14: 14px;
+  --text-15: 15px;
+  --text-16: 16px;
+  --text-17: 17px;
+  --text-18: 18px;
+  --text-20: 20px;
+  --text-22: 22px;
+  --text-24: 24px;
+  --text-36: 36px;
+
+  --text-fluid-display-lg: clamp(36px, 8vw, 60px);
+  --text-fluid-display-md: clamp(32px, 7vw, 48px);
+  --text-fluid-display-sm: clamp(28px, 6vw, 42px);
+  --text-fluid-title-lg: clamp(20px, 4.5vw, 28px);
+  --text-fluid-title-md: clamp(19px, 4vw, 24px);
+
+  --lh-1: 1;
+  --lh-1-15: 1.15;
+  --lh-1-2: 1.2;
+  --lh-1-3: 1.3;
+  --lh-1-35: 1.35;
+  --lh-1-4: 1.4;
+  --lh-1-45: 1.45;
+  --lh-1-5: 1.5;
+  --lh-1-6: 1.6;
+  --lh-1-65: 1.65;
+  --lh-1-7: 1.7;
+  --lh-1-75: 1.75;
+
+  --ls-0-01: 0.01em;
+  --ls-0-02: 0.02em;
+  --ls-0-025: 0.025em;
+  --ls-0-04: 0.04em;
+  --ls-0-08: 0.08em;
+  --ls-0-1: 0.1em;
+  --ls-0-12: 0.12em;
+  --ls-0-15: 0.15em;
+  --ls-0-18: 0.18em;
+  --ls-0-2: 0.2em;
+  --ls-0-25: 0.25em;
+
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-9999: 9999px;
+
+  --space-0: 0px;
+  --space-1: 1px;
+  --space-1-5: 1.5px;
+  --space-2: 2px;
+  --space-3: 3px;
+  --space-4: 4px;
+  --space-5: 5px;
+  --space-6: 6px;
+  --space-7: 7px;
+  --space-8: 8px;
+  --space-9: 9px;
+  --space-10: 10px;
+  --space-11: 11px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-18: 18px;
+  --space-20: 20px;
+  --space-22: 22px;
+  --space-24: 24px;
+  --space-26: 26px;
+  --space-28: 28px;
+  --space-30: 30px;
+  --space-32: 32px;
+  --space-34: 34px;
+  --space-36: 36px;
+  --space-38: 38px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-56: 56px;
+  --space-72: 72px;
+
+  --size-mobile-toggle: 38px;
+  --size-toggle-track-w: 56px;
+  --size-toggle-track-h: 28px;
+  --size-toggle-thumb: 24px;
+  --size-toggle-thumb-sm: 24px;
+  --size-toggle-thumb-top: 2px;
+  --size-toggle-thumb-left: 2px;
+  --size-toggle-thumb-dark-left: 30px;
+  --size-toggle-thumb-dark-left-sm: 30px;
+  --size-mobile-bar-w: 18px;
+  --size-mobile-bar-h: 1.5px;
+  --size-language-menu: 220px;
+  --size-featured-main-media-w: 200px;
+  --size-featured-main-media-h-mobile: 190px;
+  --size-hero-media-h-mobile: 280px;
+  --size-hero-media-h-sm: 320px;
+  --size-hero-media-w-md: 360px;
+  --position-hero-media-focus: 50% 34%;
+  --size-about-photo-w-md: 320px;
+  --size-about-photo-w-lg: 360px;
+  --size-gallery-h: 186px;
+  --size-gallery-h-md: 150px;
+  --size-gallery-h-sm: 100px;
+  --size-post-cover-h: 200px;
+  --size-post-cover-featured-h-md: 220px;
+  --size-post-cover-regular-h: 140px;
+  --size-post-hero-max-h: 460px;
+  --size-archive-cover-h: 400px;
+  --size-archive-cover-h-sm: 460px;
+  --size-archive-cover-h-md: 520px;
+  --size-archive-spread-media-h: 240px;
+  --size-archive-search-inline-w: 200px;
+  --size-content-max-480: 480px;
+  --size-content-max-400: 400px;
+  --size-content-max-520: 520px;
+  --size-content-max-560: 560px;
+  --size-content-max-620: 620px;
+  --size-content-max-640: 640px;
+  --size-content-max-760: 760px;
+
+  --gradient-toggle-track-light: linear-gradient(135deg, #3f7ab0, #6da8d6 52%, #9fd0eb);
+  --gradient-toggle-track-dark: linear-gradient(135deg, #060b12, #151c25 42%, #30333a 100%);
+  --gradient-toggle-thumb-light: linear-gradient(135deg, #c5db31, #cae23f 50%, #d9eb73);
+  --gradient-toggle-thumb-dark: linear-gradient(135deg, #e8e9dd, #d8d9ce 58%, #c7c8bd);
+  --ease-toggle: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --color-toggle-cloud: #fff;
+  --color-toggle-cloud-back: #9ec7e2;
+  --color-toggle-cloud-front: #d2efff;
+  --color-toggle-sun-core: #fff6b8;
+  --color-toggle-sun-glow: rgba(255, 246, 184, 0.55);
+  --color-toggle-sun-shine: rgba(255, 255, 255, 0.55);
+  --color-toggle-star: #fff;
+  --color-toggle-day-band-1: rgba(32, 88, 141, 0.2);
+  --color-toggle-day-band-2: rgba(26, 77, 129, 0.26);
+  --color-toggle-day-band-3: rgba(20, 66, 117, 0.32);
+  --color-toggle-day-band-4: rgba(17, 58, 108, 0.4);
+  --color-toggle-night-band-1: rgba(83, 88, 95, 0.3);
+  --color-toggle-night-band-2: rgba(74, 79, 86, 0.38);
+  --color-toggle-night-band-3: rgba(66, 71, 78, 0.48);
+  --color-toggle-night-band-4: rgba(58, 63, 70, 0.58);
+  --color-toggle-moon-crater: rgba(150, 152, 147, 0.6);
+  --color-language-trigger-bg: #f7f3ee;
+  --color-language-trigger-border: #2a2a2a;
+  --color-language-trigger-ring: #8a7e76;
+  --color-language-menu-bg: #f7f3ee;
+  --color-language-menu-header: #8a7e76;
+  --color-language-option-hover: #e8e2da;
+  --color-language-region: #8a7e76;
+  --color-language-region-active: #b8564f;
+  --color-toggle-track-solid: #d5cfc7;
+  --color-toggle-thumb-solid: #fff;
+  --color-toggle-icon-sun: #b8564f;
+  --color-toggle-icon-moon: #2d2d44;
+
+  --color-category-essay: #b8564f;
+  --color-category-insight: #6b8f71;
+  --color-category-research: #5b7b9a;
+  --color-category-note: #9a8b6b;
+
+  --color-bg: #f0ebe4;
+  --color-surface: #e8e2da;
+  --color-card: #f7f3ee;
+  --color-featured-main-bg: #f8f3ef;
+  --color-featured-side-bg: #e9e2da;
+  --color-text: #2a2a2a;
+  --color-subtext: #5a5550;
+  --color-hero-description: #4a4540;
+  --color-muted: #8a7e76;
+  --color-header-subtitle: #6b6560;
+  --color-line: #d5cfc7;
+  --color-footer-quote: #a89e96;
+  --color-footer-meta: #6b6560;
+  --color-footer-link: #4a4540;
+  --color-accent: #b8564f;
+  --color-accent-soft: rgba(184, 86, 79, 0.12);
+  --color-archive-input-bg: #fff;
+  --color-archive-clear-bg: rgba(0, 0, 0, 0.05);
+  --color-filter-chip-active-text: #fff;
+  --color-post-badge-bg: rgba(255, 255, 255, 0.9);
+  --color-post-divider: #e0dbd4;
+  --color-search-focus-border: var(--color-accent);
+  --color-badge-bg: rgba(50, 45, 40, 0.75);
+  --color-white: #fff;
+  --color-dark-button-text: #1a1a2e;
+  --color-archive-panel: #ebe5dc;
+  --color-archive-frame: rgba(255, 255, 255, 0.08);
+  --color-archive-cover-text: #fff;
+  --color-archive-cover-meta: rgba(255, 255, 255, 0.7);
+  --color-archive-cover-subtle: rgba(255, 255, 255, 0.5);
+  --color-archive-cover-divider: rgba(255, 255, 255, 0.35);
+  --gradient-archive-cover-overlay: linear-gradient(
+    175deg,
+    rgba(42, 42, 42, 0.02) 0%,
+    rgba(42, 42, 42, 0.25) 35%,
+    rgba(42, 42, 42, 0.85) 75%,
+    rgba(42, 42, 42, 0.95) 100%
+  );
+
+  --shadow-layout-wrapper: 0 4px 18px rgba(42, 42, 42, 0.08);
+  --shadow-card-strong: 0 8px 32px rgba(42, 42, 42, 0.12);
+  --shadow-card-light: 0 4px 20px rgba(42, 42, 42, 0.08);
+  --shadow-panel: var(--shadow-card-strong);
+  --shadow-featured-rest: var(--shadow-card-strong);
+  --shadow-featured-hover: 0 20px 50px rgba(42, 42, 42, 0.2);
+  --shadow-writing-rest: var(--shadow-card-light);
+  --shadow-writing-hover: 0 16px 40px rgba(42, 42, 42, 0.16);
+  --shadow-archive-cover-rest: 0 20px 60px rgba(42, 42, 42, 0.16);
+  --shadow-archive-cover-hover: 0 28px 70px rgba(42, 42, 42, 0.22);
+  --shadow-archive-spread-rest: 0 8px 40px rgba(42, 42, 42, 0.1);
+  --shadow-archive-spread-hover: 0 22px 55px rgba(42, 42, 42, 0.18);
+  --shadow-language-trigger: 0 0 0 1px rgba(42, 42, 42, 0.25), 0 1px 3px rgba(42, 42, 42, 0.12);
+  --shadow-language-trigger-open: 0 0 0 2px rgba(42, 42, 42, 0.22), 0 2px 5px rgba(42, 42, 42, 0.15);
+  --shadow-language-menu: 0 12px 40px rgba(42, 42, 42, 0.14);
+  --shadow-toggle-track-minimal: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-toggle-thumb-minimal: 0 1px 4px rgba(0, 0, 0, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --shadow-toggle-track: inset 0 1px 2px rgba(255, 255, 255, 0.35), 0 2px 6px rgba(40, 46, 56, 0.22);
+  --shadow-toggle-thumb: 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 10px rgba(221, 233, 125, 0.28);
+  --shadow-search-focus: 0 0 0 3px rgba(184, 86, 79, 0.1);
+}
+
+:root[data-theme="light"] {
+  --color-bg: #f0ebe4;
+  --color-surface: #e8e2da;
+  --color-card: #f7f3ee;
+  --color-featured-main-bg: #f8f3ef;
+  --color-featured-side-bg: #e9e2da;
+  --color-text: #2a2a2a;
+  --color-subtext: #5a5550;
+  --color-muted: #8a7e76;
+  --color-header-subtitle: #6b6560;
+  --color-line: #d5cfc7;
+  --color-footer-quote: #a89e96;
+  --color-footer-meta: #6b6560;
+  --color-footer-link: #4a4540;
+  --color-accent: #b8564f;
+  --color-accent-soft: rgba(184, 86, 79, 0.12);
+  --color-archive-input-bg: #fff;
+  --color-archive-clear-bg: rgba(0, 0, 0, 0.05);
+  --color-filter-chip-active-text: #fff;
+  --color-post-badge-bg: rgba(255, 255, 255, 0.9);
+  --color-post-divider: #e0dbd4;
+  --color-search-focus-border: var(--color-accent);
+  --color-badge-bg: rgba(50, 45, 40, 0.75);
+  --color-button-primary-text: var(--color-bg);
+  --gradient-toggle-track: var(--gradient-toggle-track-light);
+  --gradient-toggle-thumb: var(--gradient-toggle-thumb-light);
+  --color-archive-panel: #ebe5dc;
+  --color-archive-frame: rgba(255, 255, 255, 0.08);
+  --color-archive-cover-text: #fff;
+  --color-archive-cover-meta: rgba(255, 255, 255, 0.7);
+  --color-archive-cover-subtle: rgba(255, 255, 255, 0.5);
+  --color-archive-cover-divider: rgba(255, 255, 255, 0.35);
+  --gradient-archive-cover-overlay: linear-gradient(
+    175deg,
+    rgba(42, 42, 42, 0.02) 0%,
+    rgba(42, 42, 42, 0.25) 35%,
+    rgba(42, 42, 42, 0.85) 75%,
+    rgba(42, 42, 42, 0.95) 100%
+  );
+  --color-language-trigger-bg: #f7f3ee;
+  --color-language-trigger-border: #2a2a2a;
+  --color-language-trigger-ring: #8a7e76;
+  --color-language-menu-bg: #f7f3ee;
+  --color-language-menu-header: #8a7e76;
+  --color-language-option-hover: #e8e2da;
+  --color-language-region: #8a7e76;
+  --color-language-region-active: #b8564f;
+  --color-toggle-track-solid: #d5cfc7;
+  --color-toggle-thumb-solid: #fff;
+  --color-toggle-icon-sun: #b8564f;
+  --color-toggle-icon-moon: #2d2d44;
+
+  --shadow-layout-wrapper: 0 4px 18px rgba(42, 42, 42, 0.08);
+  --shadow-card-strong: 0 8px 32px rgba(42, 42, 42, 0.12);
+  --shadow-card-light: 0 4px 20px rgba(42, 42, 42, 0.08);
+  --shadow-panel: var(--shadow-card-strong);
+  --shadow-featured-rest: var(--shadow-card-strong);
+  --shadow-featured-hover: 0 20px 50px rgba(42, 42, 42, 0.2);
+  --shadow-writing-rest: var(--shadow-card-light);
+  --shadow-writing-hover: 0 16px 40px rgba(42, 42, 42, 0.16);
+  --shadow-archive-cover-rest: 0 20px 60px rgba(42, 42, 42, 0.16);
+  --shadow-archive-cover-hover: 0 28px 70px rgba(42, 42, 42, 0.22);
+  --shadow-archive-spread-rest: 0 8px 40px rgba(42, 42, 42, 0.1);
+  --shadow-archive-spread-hover: 0 22px 55px rgba(42, 42, 42, 0.18);
+  --shadow-language-trigger: 0 0 0 1px rgba(42, 42, 42, 0.25), 0 1px 3px rgba(42, 42, 42, 0.12);
+  --shadow-language-trigger-open: 0 0 0 2px rgba(42, 42, 42, 0.22), 0 2px 5px rgba(42, 42, 42, 0.15);
+  --shadow-language-menu: 0 12px 40px rgba(42, 42, 42, 0.14);
+  --shadow-toggle-track-minimal: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-toggle-thumb-minimal: 0 1px 4px rgba(0, 0, 0, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --shadow-toggle-track: inset 0 1px 2px rgba(255, 255, 255, 0.35), 0 2px 6px rgba(40, 46, 56, 0.22);
+  --shadow-toggle-thumb: 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 10px rgba(221, 233, 125, 0.28);
+  --shadow-search-focus: 0 0 0 3px rgba(184, 86, 79, 0.1);
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #171a33;
+  --color-surface: #25253a;
+  --color-card: #2d2d46;
+  --color-featured-main-bg: var(--color-card);
+  --color-featured-side-bg: var(--color-surface);
+  --color-text: #e8e2da;
+  --color-subtext: #b0a89e;
+  --color-hero-description: #b0a89e;
+  --color-muted: #8a8078;
+  --color-header-subtitle: #9a948c;
+  --color-line: #3a3a50;
+  --color-footer-quote: #6a6460;
+  --color-footer-meta: #8a8078;
+  --color-footer-link: #b0a89e;
+  --color-accent: #c16860;
+  --color-accent-soft: rgba(193, 104, 96, 0.18);
+  --color-archive-input-bg: #252535;
+  --color-archive-clear-bg: rgba(255, 255, 255, 0.06);
+  --color-filter-chip-active-text: #1a1a2e;
+  --color-post-badge-bg: rgba(26, 26, 46, 0.85);
+  --color-post-divider: #3a3a50;
+  --color-search-focus-border: #4a4a60;
+  --color-badge-bg: rgba(26, 26, 46, 0.85);
+  --color-button-primary-text: #1a1a2e;
+  --gradient-toggle-track: var(--gradient-toggle-track-dark);
+  --gradient-toggle-thumb: var(--gradient-toggle-thumb-dark);
+  --color-archive-panel: #2d2d44;
+  --color-archive-frame: rgba(255, 255, 255, 0.08);
+  --color-archive-cover-text: #fff;
+  --color-archive-cover-meta: rgba(255, 255, 255, 0.7);
+  --color-archive-cover-subtle: rgba(255, 255, 255, 0.5);
+  --color-archive-cover-divider: rgba(255, 255, 255, 0.35);
+  --gradient-archive-cover-overlay: linear-gradient(
+    175deg,
+    rgba(26, 26, 46, 0.1) 0%,
+    rgba(26, 26, 46, 0.4) 35%,
+    rgba(26, 26, 46, 0.92) 75%,
+    rgba(26, 26, 46, 0.98) 100%
+  );
+  --color-language-trigger-bg: #252535;
+  --color-language-trigger-border: #e8e2da;
+  --color-language-trigger-ring: #3a3a50;
+  --color-language-menu-bg: #252535;
+  --color-language-menu-header: #9a948c;
+  --color-language-option-hover: #2d2d44;
+  --color-language-region: #8a8078;
+  --color-language-region-active: #c16860;
+  --color-toggle-track-solid: #2d2d44;
+  --color-toggle-thumb-solid: #e8e2da;
+  --color-toggle-icon-sun: #c16860;
+  --color-toggle-icon-moon: #2d2d44;
+
+  --shadow-layout-wrapper: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --shadow-card-strong: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-card-light: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-panel: var(--shadow-card-strong);
+  --shadow-featured-rest: var(--shadow-card-strong);
+  --shadow-featured-hover: 0 20px 50px rgba(0, 0, 0, 0.5);
+  --shadow-writing-rest: var(--shadow-card-light);
+  --shadow-writing-hover: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-archive-cover-rest: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --shadow-archive-cover-hover: 0 28px 70px rgba(0, 0, 0, 0.6);
+  --shadow-archive-spread-rest: 0 8px 40px rgba(0, 0, 0, 0.35);
+  --shadow-archive-spread-hover: 0 22px 55px rgba(0, 0, 0, 0.45);
+  --shadow-language-trigger: 0 0 0 1px rgba(232, 226, 218, 0.22), 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-language-trigger-open: 0 0 0 2px rgba(232, 226, 218, 0.24), 0 2px 5px rgba(0, 0, 0, 0.45);
+  --shadow-language-menu: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-toggle-track-minimal: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-toggle-thumb-minimal: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --shadow-toggle-track: inset 0 1px 2px rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.45);
+  --shadow-toggle-thumb: 0 2px 8px rgba(0, 0, 0, 0.4), inset -2px -2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-search-focus: 0 0 0 3px rgba(184, 86, 79, 0.15);
+}

@@ -1,0 +1,36 @@
+---
+export const prerender = false;
+import FlowLayout from '../../layouts/FlowLayout.astro';
+import { copy } from '../../data/newsletter-copy';
+
+// Legacy fallback route: no longer part of the primary funnel path.
+const c = copy['fr'];
+---
+
+<FlowLayout title="Maintenant, on commence — Leonardo Camacho" description="Bienvenue dans The Compounding Letter." lang={c.lang}>
+  <main class="flow-container">
+    <h1 class="flow-hero">{c.thankyouHero}</h1>
+
+    <div class="flow-section">
+      <h2 class="flow-heading-2">{c.thankyouExploreTitle}</h2>
+      <p class="flow-body">{c.thankyouExploreBody}</p>
+      <p class="flow-body-italic">{c.thankyouExploreTagline}</p>
+    </div>
+
+    <hr class="flow-divider" />
+
+    <div class="flow-section">
+      <h3 class="flow-heading-3">{c.thankyouStarTitle}</h3>
+      <p class="flow-body">{c.thankyouStarBody}</p>
+    </div>
+
+    <hr class="flow-divider" />
+
+    <div class="flow-section">
+      <p class="flow-body flow-muted">{c.thankyouMeanwhile}</p>
+      <div class="flow-social-links">
+        <a href="https://www.linkedin.com/in/leocamacho/" target="_blank" rel="noopener noreferrer" class="flow-social-link">{c.thankyouLinkedin}</a>
+      </div>
+    </div>
+  </main>
+</FlowLayout>
