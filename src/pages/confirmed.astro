@@ -15,6 +15,8 @@ const updateToken =
     : '';
 const profileSaveWarningMissingToken =
   "We couldn't securely save your profile details in this session.";
+const profileSaveWarningMissingSubscriber =
+  "We couldn't identify your confirmation session, so your answers were not saved.";
 const profileSaveWarningSaveFailed =
   "Your answers were not saved this time, but your access is confirmed.";
 ---
@@ -36,6 +38,7 @@ const profileSaveWarningSaveFailed =
         data-subscriber-id={subscriberId}
         data-update-token={updateToken}
         data-warning-missing-token={profileSaveWarningMissingToken}
+        data-warning-missing-subscriber={profileSaveWarningMissingSubscriber}
         data-warning-save-failed={profileSaveWarningSaveFailed}
       >
         <div class="flow-field">
@@ -100,6 +103,7 @@ const profileSaveWarningSaveFailed =
     const reveal = document.getElementById('postSubmit') as HTMLElement | null;
     const saveWarning = document.getElementById('profileSaveWarning') as HTMLParagraphElement | null;
     const warningMissingToken = form?.dataset.warningMissingToken || '';
+    const warningMissingSubscriber = form?.dataset.warningMissingSubscriber || '';
     const warningSaveFailed = form?.dataset.warningSaveFailed || '';
     const hasProtocol = (value: string) => /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
     const normalizeWebsite = (value: string) => {
@@ -125,13 +129,55 @@ const profileSaveWarningSaveFailed =
       saveWarning.classList.remove('is-visible');
     };
 
+    const readQuerySubscriberId = () =>
+      new URLSearchParams(window.location.search).get('ck_subscriber_id')?.trim() || '';
+
+    const readSessionSubscriberId = () => {
+      try {
+        return window.sessionStorage.getItem('ck_subscriber_id')?.trim() || '';
+      } catch {
+        return '';
+      }
+    };
+
+    const persistSessionSubscriberId = (value: string) => {
+      if (!value) return;
+      try {
+        window.sessionStorage.setItem('ck_subscriber_id', value);
+      } catch {}
+    };
+
+    const resolveSubscriberId = () => {
+      const fromDataset = form?.dataset.subscriberId?.trim() || '';
+      if (fromDataset) {
+        persistSessionSubscriberId(fromDataset);
+        return fromDataset;
+      }
+
+      const fromQuery = readQuerySubscriberId();
+      if (fromQuery) {
+        if (form) form.dataset.subscriberId = fromQuery;
+        persistSessionSubscriberId(fromQuery);
+        return fromQuery;
+      }
+
+      const fromSession = readSessionSubscriberId();
+      if (fromSession) {
+        if (form) form.dataset.subscriberId = fromSession;
+        return fromSession;
+      }
+
+      return '';
+    };
+
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       clearSaveWarning();
 
-      const subscriberId = form?.dataset.subscriberId?.trim() || '';
+      const subscriberId = resolveSubscriberId();
       const updateToken = form?.dataset.updateToken?.trim() || '';
       const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      let shouldReveal = true;
 
       const fields = {
         name: (document.getElementById('name') as HTMLInputElement).value,
@@ -145,28 +191,34 @@ const profileSaveWarningSaveFailed =
       if (submitButton) submitButton.disabled = true;
 
       try {
-        if (subscriberId) {
-          if (!updateToken) {
-            setSaveWarning(warningMissingToken);
-          } else {
-            try {
-              const response = await fetch('/api/update-subscriber', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subscriber_id: subscriberId, update_token: updateToken, fields }),
-              });
+        if (!subscriberId) {
+          setSaveWarning(warningMissingSubscriber);
+          shouldReveal = false;
+          return;
+        }
 
-              if (!response.ok) {
-                setSaveWarning(warningSaveFailed);
-              }
-            } catch {
+        if (!updateToken) {
+          setSaveWarning(warningMissingToken);
+        } else {
+          try {
+            const response = await fetch('/api/update-subscriber', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ subscriber_id: subscriberId, update_token: updateToken, fields }),
+            });
+
+            if (!response.ok) {
               setSaveWarning(warningSaveFailed);
             }
+          } catch {
+            setSaveWarning(warningSaveFailed);
           }
         }
       } finally {
         if (submitButton) submitButton.disabled = false;
-        showPostSubmit();
+        if (shouldReveal) {
+          showPostSubmit();
+        }
       }
     });
 

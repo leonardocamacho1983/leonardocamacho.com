@@ -21,6 +21,13 @@
     return `${nextUrl.pathname}${nextUrl.search}`;
   };
 
+  const persistSubscriberId = (subscriberId) => {
+    if (!subscriberId) return;
+    try {
+      window.sessionStorage.setItem('ck_subscriber_id', subscriberId);
+    } catch {}
+  };
+
   const attachLaunchSignupForm = () => {
     const launchForm = document.getElementById('launchSignupForm');
     if (!launchForm) return;
@@ -63,6 +70,8 @@
             const body = await res.json();
             subscriberId = normalizeSubscriberId(body?.subscriber_id);
           } catch {}
+
+          persistSubscriberId(subscriberId);
 
           formWrap?.classList.add('is-hidden');
           successWrap?.classList.add('is-visible');
@@ -119,6 +128,8 @@
             const body = await res.json();
             subscriberId = normalizeSubscriberId(body?.subscriber_id);
           } catch {}
+
+          persistSubscriberId(subscriberId);
 
           const prefix = path.startsWith('/pt-br') ? '/pt-br'
                        : path.startsWith('/pt-pt') || path.startsWith('/pt/') ? '/pt'
