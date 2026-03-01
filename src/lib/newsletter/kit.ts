@@ -1,6 +1,7 @@
 import type { LocaleKey } from "@/lib/locales";
 
 type KitCustomFieldValue = string | number | boolean | null | undefined;
+type KitSubscriberState = "active" | "inactive" | "bounced" | "cancelled";
 
 interface SubscribeInput {
   email: string;
@@ -87,12 +88,17 @@ const kitRequest = async (
 const upsertSubscriberFields = async (
   email: string,
   fields: Record<string, KitCustomFieldValue>,
+  options?: { state?: KitSubscriberState },
 ): Promise<void> => {
   const filteredFields = compactFields(fields);
-  await kitRequest("/subscribers", {
+  const payload: Record<string, unknown> = {
     email_address: email,
     fields: filteredFields,
-  });
+  };
+  if (options?.state) {
+    payload.state = options.state;
+  }
+  await kitRequest("/subscribers", payload);
 };
 
 const addSubscriberToForm = async (email: string, referrerPath: string): Promise<void> => {
@@ -111,6 +117,8 @@ const addSubscriberToForm = async (email: string, referrerPath: string): Promise
 };
 
 export const subscribeToKit = async (input: SubscribeInput): Promise<void> => {
+  // Create/update the subscriber as inactive first so Kit can send DOI/incentive email
+  // when adding the subscriber to the form.
   await upsertSubscriberFields(input.email, {
     locale: input.locale,
     Locale: input.locale,
@@ -119,7 +127,7 @@ export const subscribeToKit = async (input: SubscribeInput): Promise<void> => {
     consent_ts: input.consentTimestamp,
     consent_policy_version: input.consentPolicyVersion,
     member_status: "free",
-  });
+  }, { state: "inactive" });
 
   await addSubscriberToForm(input.email, input.path);
 };
