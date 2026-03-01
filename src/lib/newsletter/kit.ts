@@ -3,6 +3,12 @@ import type { LocaleKey } from "@/lib/locales";
 type KitCustomFieldValue = string | number | boolean | null | undefined;
 type KitSubscriberState = "active" | "inactive" | "bounced" | "cancelled";
 
+interface KitSubscriberResponse {
+  subscriber?: {
+    id?: string | number;
+  };
+}
+
 interface SubscribeInput {
   email: string;
   locale: LocaleKey;
@@ -59,7 +65,7 @@ const kitRequest = async (
   path: string,
   payload: unknown,
   method: "POST" | "PUT" = "POST",
-): Promise<void> => {
+): Promise<unknown> => {
   const { apiKey, baseUrl } = getConfig();
   const response = await fetch(`${baseUrl}${path}`, {
     method,
@@ -72,7 +78,15 @@ const kitRequest = async (
   });
 
   if (response.ok) {
-    return;
+    if (response.status === 204) {
+      return null;
+    }
+
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
   }
 
   let details = `${response.status}`;
@@ -86,11 +100,19 @@ const kitRequest = async (
   throw new KitApiError(`Kit API request failed: ${details}`, response.status);
 };
 
+const extractSubscriberId = (payload: unknown): string | undefined => {
+  const response = payload as KitSubscriberResponse;
+  const id = response?.subscriber?.id;
+  if (typeof id === "number") return String(id);
+  if (typeof id === "string" && id.trim()) return id.trim();
+  return undefined;
+};
+
 const upsertSubscriberFields = async (
   email: string,
   fields: Record<string, KitCustomFieldValue>,
   options?: { state?: KitSubscriberState },
-): Promise<void> => {
+): Promise<string | undefined> => {
   const filteredFields = compactFields(fields);
   const payload: Record<string, unknown> = {
     email_address: email,
@@ -99,28 +121,32 @@ const upsertSubscriberFields = async (
   if (options?.state) {
     payload.state = options.state;
   }
-  await kitRequest("/subscribers", payload);
+  const response = await kitRequest("/subscribers", payload);
+  return extractSubscriberId(response);
 };
 
-const addSubscriberToForm = async (email: string, referrerPath: string): Promise<void> => {
+const addSubscriberToForm = async (email: string, referrerPath: string): Promise<string | undefined> => {
   const { formId } = getConfig();
   try {
-    await kitRequest(`/forms/${formId}/subscribers`, {
+    const response = await kitRequest(`/forms/${formId}/subscribers`, {
       email_address: email,
       referrer: referrerPath || "/",
     });
+    return extractSubscriberId(response);
   } catch (error) {
     if (error instanceof KitApiError && (error.status === 409 || error.status === 422)) {
-      return;
+      return undefined;
     }
     throw error;
   }
 };
 
-export const subscribeToKit = async (input: SubscribeInput): Promise<void> => {
+export const subscribeToKit = async (
+  input: SubscribeInput,
+): Promise<{ subscriberId?: string }> => {
   // Create/update the subscriber as inactive first so Kit can send DOI/incentive email
   // when adding the subscriber to the form.
-  await upsertSubscriberFields(input.email, {
+  const upsertedSubscriberId = await upsertSubscriberFields(input.email, {
     locale: input.locale,
     Locale: input.locale,
     signup_source: input.source,
@@ -130,7 +156,8 @@ export const subscribeToKit = async (input: SubscribeInput): Promise<void> => {
     member_status: "free",
   }, { state: "inactive" });
 
-  await addSubscriberToForm(input.email, input.path);
+  const formSubscriberId = await addSubscriberToForm(input.email, input.path);
+  return { subscriberId: formSubscriberId || upsertedSubscriberId };
 };
 
 export const updateKitProfile = async (input: ProfileInput): Promise<void> => {

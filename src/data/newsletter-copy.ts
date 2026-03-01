@@ -23,6 +23,7 @@ export interface LocaleCopy {
   welcomeSeason: string;
   welcomeExclusive: string;
   welcomeInstruction: string;
+  welcomeContinueCta: string;
   welcomeSubjectLine: string;
   welcomeSubjectLabel: string;
   welcomeOpenGmail: string;
@@ -91,6 +92,7 @@ export const copy: Record<string, LocaleCopy> = {
     welcomeSeason: 'The first essay arrives <strong>Spring 2026</strong>.',
     welcomeExclusive: 'You\u2019ll receive it before it\u2019s published anywhere else.',
     welcomeInstruction: 'Confirm your email to secure your place.',
+    welcomeContinueCta: 'I confirmed my email',
     welcomeSubjectLine: 'Leonardo Camacho \u2014 Confirm your place',
     welcomeSubjectLabel: 'Look for the subject:',
     welcomeOpenGmail: 'Open Gmail',
@@ -155,6 +157,7 @@ export const copy: Record<string, LocaleCopy> = {
     welcomeSeason: 'O primeiro ensaio chega no <strong>Outono de 2026</strong>.',
     welcomeExclusive: 'Voc\u00ea vai receb\u00ea-lo antes de ser publicado em qualquer outro lugar.',
     welcomeInstruction: 'Confirme seu email para garantir seu lugar.',
+    welcomeContinueCta: 'J\u00e1 confirmei meu email',
     welcomeSubjectLine: 'Leonardo Camacho \u2014 Confirme seu lugar',
     welcomeSubjectLabel: 'Procure pelo assunto:',
     welcomeOpenGmail: 'Abrir Gmail',
@@ -219,6 +222,7 @@ export const copy: Record<string, LocaleCopy> = {
     welcomeSeason: 'O primeiro ensaio chega na <strong>Primavera de 2026</strong>.',
     welcomeExclusive: 'Vai receb\u00ea-lo antes de ser publicado em qualquer outro lugar.',
     welcomeInstruction: 'Confirme o seu email para garantir o seu lugar.',
+    welcomeContinueCta: 'J\u00e1 confirmei o meu email',
     welcomeSubjectLine: 'Leonardo Camacho \u2014 Confirme o seu lugar',
     welcomeSubjectLabel: 'Procure pelo assunto:',
     welcomeOpenGmail: 'Abrir Gmail',
@@ -283,6 +287,7 @@ export const copy: Record<string, LocaleCopy> = {
     welcomeSeason: 'Le premier essai arrive au <strong>Printemps 2026</strong>.',
     welcomeExclusive: 'Vous le recevrez avant qu\u2019il ne soit publi\u00e9 ailleurs.',
     welcomeInstruction: 'Confirmez votre email pour garantir votre place.',
+    welcomeContinueCta: 'J\u2019ai confirm\u00e9 mon email',
     welcomeSubjectLine: 'Leonardo Camacho \u2014 Confirmez votre place',
     welcomeSubjectLabel: 'Cherchez le sujet :',
     welcomeOpenGmail: 'Ouvrir Gmail',

@@ -7,6 +7,20 @@
     return 'en_US';
   };
 
+  const normalizeSubscriberId = (value) => {
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'number') return String(value);
+    return '';
+  };
+
+  const buildRedirectUrl = (targetPath, subscriberId) => {
+    const nextUrl = new URL(targetPath, window.location.origin);
+    if (subscriberId) {
+      nextUrl.searchParams.set('ck_subscriber_id', subscriberId);
+    }
+    return `${nextUrl.pathname}${nextUrl.search}`;
+  };
+
   const attachLaunchSignupForm = () => {
     const launchForm = document.getElementById('launchSignupForm');
     if (!launchForm) return;
@@ -44,10 +58,16 @@
         });
 
         if (res.ok) {
+          let subscriberId = '';
+          try {
+            const body = await res.json();
+            subscriberId = normalizeSubscriberId(body?.subscriber_id);
+          } catch {}
+
           formWrap?.classList.add('is-hidden');
           successWrap?.classList.add('is-visible');
           window.setTimeout(() => {
-            window.location.href = welcomePath;
+            window.location.href = buildRedirectUrl(welcomePath, subscriberId);
           }, revealDelay);
           return;
         }
@@ -94,11 +114,17 @@
         });
 
         if (res.ok) {
+          let subscriberId = '';
+          try {
+            const body = await res.json();
+            subscriberId = normalizeSubscriberId(body?.subscriber_id);
+          } catch {}
+
           const prefix = path.startsWith('/pt-br') ? '/pt-br'
                        : path.startsWith('/pt-pt') || path.startsWith('/pt/') ? '/pt'
                        : path.startsWith('/fr-fr') || path.startsWith('/fr/') ? '/fr'
                        : '';
-          window.location.href = `${prefix}/welcome`;
+          window.location.href = buildRedirectUrl(`${prefix}/welcome`, subscriberId);
         } else {
           btn.textContent = 'TRY AGAIN';
           btn.disabled = false;

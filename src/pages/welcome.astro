@@ -4,6 +4,10 @@ import FlowLayout from '../layouts/FlowLayout.astro';
 import { copy } from '../data/newsletter-copy';
 
 const c = copy['en'];
+const subscriberId = Astro.url.searchParams.get('ck_subscriber_id')?.trim() || '';
+const confirmedPath = subscriberId
+  ? `/confirmed?ck_subscriber_id=${encodeURIComponent(subscriberId)}`
+  : '/confirmed';
 ---
 
 <FlowLayout title="You're in — Leonardo Camacho" description="Confirm your email to secure your place." lang={c.lang}>
@@ -36,6 +40,9 @@ const c = copy['en'];
       <div class="flow-subject-card">
         <p class="flow-subject-label">{c.welcomeSubjectLabel}</p>
         <p class="flow-subject-text">{c.welcomeSubjectLine}</p>
+      </div>
+      <div class="welcome-continue">
+        <a href={confirmedPath} class="flow-btn flow-btn-primary">{c.welcomeContinueCta}</a>
       </div>
     </div>
   </main>
@@ -77,6 +84,7 @@ const c = copy['en'];
     .welcome-enter { animation: welcome-fade-up 0.8s ease-out both; }
     .welcome-gap-lg { height: 36px; }
     .welcome-gap-sm { height: 24px; }
+    .welcome-continue { margin-top: 22px; }
 
     @keyframes welcome-fade-up {
       from { opacity: 0; transform: translateY(14px); }

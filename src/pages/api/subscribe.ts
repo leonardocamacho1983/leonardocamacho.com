@@ -89,7 +89,7 @@ export const POST: APIRoute = async ({ request }) => {
       import.meta.env.NEWSLETTER_CONSENT_POLICY_VERSION ||
       'v1';
 
-    await subscribeToKit({
+    const result = await subscribeToKit({
       email,
       locale: normalizedLocale,
       source,
@@ -98,7 +98,10 @@ export const POST: APIRoute = async ({ request }) => {
       consentPolicyVersion,
     });
 
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    return new Response(
+      JSON.stringify({ success: true, subscriber_id: result.subscriberId || null }),
+      { status: 200 },
+    );
   } catch (error) {
     console.error('[api/subscribe] Subscribe error:', error);
     return new Response(JSON.stringify({ error: 'Server error' }), { status: 500 });
