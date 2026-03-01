@@ -39,6 +39,10 @@ const profileSaveWarningSaveFailed =
         data-warning-save-failed={profileSaveWarningSaveFailed}
       >
         <div class="flow-field">
+          <label class="flow-field-label-caps" for="name">{c.confirmedLabelName}</label>
+          <input type="text" id="name" name="name" placeholder={c.confirmedPlaceholderName} class="flow-input" autocomplete="name" />
+        </div>
+        <div class="flow-field">
           <label class="flow-field-label-caps" for="position">{c.confirmedLabelPosition}</label>
           <input type="text" id="position" name="position" placeholder={c.confirmedPlaceholderPosition} class="flow-input" />
         </div>
@@ -47,8 +51,12 @@ const profileSaveWarningSaveFailed =
           <input type="text" id="company" name="company" placeholder={c.confirmedPlaceholderCompany} class="flow-input" />
         </div>
         <div class="flow-field">
-          <label class="flow-field-label" for="company_website">{c.confirmedLabelCompanyWebsite}</label>
-          <input type="url" id="company_website" name="company_website" placeholder={c.confirmedPlaceholderCompanyWebsite} class="flow-input" inputmode="url" />
+          <label class="flow-field-label" for="company_website">
+            {c.confirmedLabelCompanyWebsite}
+            <span class="flow-optional">{c.confirmedOptional}</span>
+          </label>
+          <input type="text" id="company_website" name="company_website" placeholder={c.confirmedPlaceholderCompanyWebsite} class="flow-input" inputmode="url" autocomplete="url" />
+          <p class="flow-field-help">{c.confirmedHelpCompanyWebsite}</p>
         </div>
         <div class="flow-field">
           <label class="flow-field-label" for="team_size">{c.confirmedLabelTeamSize}</label>
@@ -93,6 +101,12 @@ const profileSaveWarningSaveFailed =
     const saveWarning = document.getElementById('profileSaveWarning') as HTMLParagraphElement | null;
     const warningMissingToken = form?.dataset.warningMissingToken || '';
     const warningSaveFailed = form?.dataset.warningSaveFailed || '';
+    const hasProtocol = (value: string) => /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
+    const normalizeWebsite = (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      return hasProtocol(trimmed) ? trimmed : `https://${trimmed}`;
+    };
 
     const showPostSubmit = () => {
       form?.classList.add('is-hidden');
@@ -120,9 +134,10 @@ const profileSaveWarningSaveFailed =
       const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
 
       const fields = {
+        name: (document.getElementById('name') as HTMLInputElement).value,
         position: (document.getElementById('position') as HTMLInputElement).value,
         company: (document.getElementById('company') as HTMLInputElement).value,
-        company_website: (document.getElementById('company_website') as HTMLInputElement).value,
+        company_website: normalizeWebsite((document.getElementById('company_website') as HTMLInputElement).value),
         team_size: (document.getElementById('team_size') as HTMLInputElement).value,
         strategic_question: (document.getElementById('strategic_question') as HTMLTextAreaElement).value,
       };

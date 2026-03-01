@@ -25,6 +25,15 @@ const getSafeField = (value: unknown, maxLength: number): string => {
   return '';
 };
 
+const hasUrlProtocol = (value: string): boolean =>
+  /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
+
+const normalizeCompanyWebsite = (value: unknown): string => {
+  const clean = getSafeField(value, 220);
+  if (!clean) return '';
+  return hasUrlProtocol(clean) ? clean : `https://${clean}`;
+};
+
 export const POST: APIRoute = async ({ request }) => {
   let payload: UpdateSubscriberPayload;
   try {
@@ -66,9 +75,10 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     await updateKitProfileBySubscriberId(subscriberId, {
+      name: getSafeField(fields.name, 120),
       position: getSafeField(fields.position, 120),
       company: getSafeField(fields.company, 120),
-      companyWebsite: getSafeField(fields.company_website, 220),
+      companyWebsite: normalizeCompanyWebsite(fields.company_website),
       teamSize: getSafeField(fields.team_size, 80),
       strategicQuestion: getSafeField(fields.strategic_question, 500),
     });

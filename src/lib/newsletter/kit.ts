@@ -14,6 +14,7 @@ interface SubscribeInput {
 
 interface ProfileInput {
   email: string;
+  name?: string;
   position?: string;
   company?: string;
   companyWebsite?: string;
@@ -134,6 +135,8 @@ export const subscribeToKit = async (input: SubscribeInput): Promise<void> => {
 
 export const updateKitProfile = async (input: ProfileInput): Promise<void> => {
   await upsertSubscriberFields(input.email, {
+    name: input.name,
+    Name: input.name,
     position: input.position,
     Position: input.position,
     company: input.company,
@@ -157,6 +160,8 @@ export const updateKitProfileBySubscriberId = async (
     `/subscribers/${subscriberId}`,
     {
       fields: compactFields({
+        name: input.name,
+        Name: input.name,
         position: input.position,
         Position: input.position,
         company: input.company,

@@ -34,11 +34,14 @@ export interface LocaleCopy {
   confirmedFormTitle: string;
   confirmedFormSubtitle: string;
   confirmedFormNote: string;
+  confirmedLabelName: string;
   confirmedLabelPosition: string;
   confirmedLabelCompany: string;
   confirmedLabelCompanyWebsite: string;
+  confirmedHelpCompanyWebsite: string;
   confirmedLabelTeamSize: string;
   confirmedLabelQuestion: string;
+  confirmedPlaceholderName: string;
   confirmedPlaceholderPosition: string;
   confirmedPlaceholderCompany: string;
   confirmedPlaceholderCompanyWebsite: string;
@@ -98,14 +101,17 @@ export const copy: Record<string, LocaleCopy> = {
     confirmedFormTitle: 'Who\u2019s reading?',
     confirmedFormSubtitle: 'Knowing who\u2019s here helps me write what matters.',
     confirmedFormNote: 'Four fields. Thirty seconds.',
+    confirmedLabelName: 'NAME',
     confirmedLabelPosition: 'POSITION',
     confirmedLabelCompany: 'COMPANY',
-    confirmedLabelCompanyWebsite: 'Company website URL',
+    confirmedLabelCompanyWebsite: 'Company website',
+    confirmedHelpCompanyWebsite: 'You can enter only the domain (e.g. yourcompany.com).',
     confirmedLabelTeamSize: 'How many people do you lead?',
     confirmedLabelQuestion: 'What\u2019s the strategic question keeping you up right now?',
+    confirmedPlaceholderName: 'Your name',
     confirmedPlaceholderPosition: 'e.g. CEO, VP Strategy, Founder',
     confirmedPlaceholderCompany: 'Where do you work?',
-    confirmedPlaceholderCompanyWebsite: 'https://yourcompany.com',
+    confirmedPlaceholderCompanyWebsite: 'yourcompany.com',
     confirmedPlaceholderTeamSize: 'e.g. 12, 200, just me',
     confirmedPlaceholderQuestion: 'This shapes what I write next.',
     confirmedOptional: 'Optional',
@@ -159,14 +165,17 @@ export const copy: Record<string, LocaleCopy> = {
     confirmedFormTitle: 'Quem est\u00e1 lendo?',
     confirmedFormSubtitle: 'Saber quem est\u00e1 aqui me ajuda a escrever o que importa.',
     confirmedFormNote: 'Quatro campos. Trinta segundos.',
+    confirmedLabelName: 'NOME',
     confirmedLabelPosition: 'CARGO',
     confirmedLabelCompany: 'EMPRESA',
-    confirmedLabelCompanyWebsite: 'URL do site da empresa',
+    confirmedLabelCompanyWebsite: 'Site da empresa',
+    confirmedHelpCompanyWebsite: 'Pode inserir apenas o dom\u00ednio (ex.: suaempresa.com.br).',
     confirmedLabelTeamSize: 'Quantas pessoas voc\u00ea lidera?',
     confirmedLabelQuestion: 'Qual \u00e9 a quest\u00e3o estrat\u00e9gica que tira seu sono agora?',
+    confirmedPlaceholderName: 'Seu nome',
     confirmedPlaceholderPosition: 'ex. CEO, VP Estrat\u00e9gia, Fundador',
     confirmedPlaceholderCompany: 'Onde voc\u00ea trabalha?',
-    confirmedPlaceholderCompanyWebsite: 'https://suaempresa.com.br',
+    confirmedPlaceholderCompanyWebsite: 'suaempresa.com.br',
     confirmedPlaceholderTeamSize: 'ex. 12, 200, s\u00f3 eu',
     confirmedPlaceholderQuestion: 'Isso define o que eu escrevo a seguir.',
     confirmedOptional: 'Opcional',
@@ -220,14 +229,17 @@ export const copy: Record<string, LocaleCopy> = {
     confirmedFormTitle: 'Quem est\u00e1 a ler?',
     confirmedFormSubtitle: 'Saber quem est\u00e1 aqui ajuda-me a escrever o que importa.',
     confirmedFormNote: 'Quatro campos. Trinta segundos.',
+    confirmedLabelName: 'NOME',
     confirmedLabelPosition: 'CARGO',
     confirmedLabelCompany: 'EMPRESA',
-    confirmedLabelCompanyWebsite: 'URL do site da empresa',
+    confirmedLabelCompanyWebsite: 'Site da empresa',
+    confirmedHelpCompanyWebsite: 'Pode inserir apenas o dom\u00ednio (ex.: suaempresa.pt).',
     confirmedLabelTeamSize: 'Quantas pessoas lidera?',
     confirmedLabelQuestion: 'Qual \u00e9 a quest\u00e3o estrat\u00e9gica que lhe tira o sono agora?',
+    confirmedPlaceholderName: 'O seu nome',
     confirmedPlaceholderPosition: 'ex. CEO, VP Estrat\u00e9gia, Fundador',
     confirmedPlaceholderCompany: 'Onde trabalha?',
-    confirmedPlaceholderCompanyWebsite: 'https://suaempresa.pt',
+    confirmedPlaceholderCompanyWebsite: 'suaempresa.pt',
     confirmedPlaceholderTeamSize: 'ex. 12, 200, s\u00f3 eu',
     confirmedPlaceholderQuestion: 'Isto define o que escrevo a seguir.',
     confirmedOptional: 'Opcional',
@@ -281,14 +293,17 @@ export const copy: Record<string, LocaleCopy> = {
     confirmedFormTitle: 'Qui lit ?',
     confirmedFormSubtitle: 'Savoir qui est ici m\u2019aide \u00e0 \u00e9crire ce qui compte.',
     confirmedFormNote: 'Quatre champs. Trente secondes.',
+    confirmedLabelName: 'NOM',
     confirmedLabelPosition: 'POSTE',
     confirmedLabelCompany: 'ENTREPRISE',
-    confirmedLabelCompanyWebsite: 'URL du site de l\u2019entreprise',
+    confirmedLabelCompanyWebsite: 'Site web de l\u2019entreprise',
+    confirmedHelpCompanyWebsite: 'Vous pouvez saisir uniquement le domaine (ex. : votreentreprise.fr).',
     confirmedLabelTeamSize: 'Combien de personnes dirigez-vous ?',
     confirmedLabelQuestion: 'Quelle est la question strat\u00e9gique qui vous emp\u00eache de dormir ?',
+    confirmedPlaceholderName: 'Votre nom',
     confirmedPlaceholderPosition: 'ex. PDG, VP Strat\u00e9gie, Fondateur',
     confirmedPlaceholderCompany: 'O\u00f9 travaillez-vous ?',
-    confirmedPlaceholderCompanyWebsite: 'https://votreentreprise.fr',
+    confirmedPlaceholderCompanyWebsite: 'votreentreprise.fr',
     confirmedPlaceholderTeamSize: 'ex. 12, 200, juste moi',
     confirmedPlaceholderQuestion: 'Cela d\u00e9finit ce que j\u2019\u00e9cris ensuite.',
     confirmedOptional: 'Facultatif',
