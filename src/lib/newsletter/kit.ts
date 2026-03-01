@@ -111,7 +111,7 @@ const extractSubscriberId = (payload: unknown): string | undefined => {
 const upsertSubscriberFields = async (
   email: string,
   fields: Record<string, KitCustomFieldValue>,
-  options?: { state?: KitSubscriberState },
+  options?: { state?: KitSubscriberState; firstName?: string },
 ): Promise<string | undefined> => {
   const filteredFields = compactFields(fields);
   const payload: Record<string, unknown> = {
@@ -120,6 +120,9 @@ const upsertSubscriberFields = async (
   };
   if (options?.state) {
     payload.state = options.state;
+  }
+  if (options?.firstName?.trim()) {
+    payload.first_name = options.firstName.trim();
   }
   const response = await kitRequest("/subscribers", payload);
   return extractSubscriberId(response);
@@ -169,6 +172,8 @@ export const updateKitProfile = async (input: ProfileInput): Promise<void> => {
     company: input.company,
     Company: input.company,
     company_website: input.companyWebsite,
+    company_site: input.companyWebsite,
+    "Company site": input.companyWebsite,
     "Company website": input.companyWebsite,
     team_size: input.teamSize,
     "Team size": input.teamSize,
@@ -176,7 +181,7 @@ export const updateKitProfile = async (input: ProfileInput): Promise<void> => {
     strategic_question: input.strategicQuestion,
     "Strategic question": input.strategicQuestion,
     survey_completed_at: new Date().toISOString(),
-  });
+  }, { firstName: input.name });
 };
 
 export const updateKitProfileBySubscriberId = async (
@@ -186,6 +191,7 @@ export const updateKitProfileBySubscriberId = async (
   await kitRequest(
     `/subscribers/${subscriberId}`,
     {
+      first_name: input.name?.trim() || undefined,
       fields: compactFields({
         name: input.name,
         Name: input.name,
@@ -194,6 +200,8 @@ export const updateKitProfileBySubscriberId = async (
         company: input.company,
         Company: input.company,
         company_website: input.companyWebsite,
+        company_site: input.companyWebsite,
+        "Company site": input.companyWebsite,
         "Company website": input.companyWebsite,
         team_size: input.teamSize,
         "Team size": input.teamSize,
