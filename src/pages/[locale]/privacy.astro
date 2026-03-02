@@ -39,6 +39,7 @@ const dict: Record<
     usageItems: string[];
     rightsTitle: string;
     rightsBody: string;
+    returnPrompt: string;
     scope: string;
     launchBack: string;
     legalBack: string;
@@ -68,6 +69,7 @@ const dict: Record<
     rightsTitle: "Your rights and control",
     rightsBody:
       "You can unsubscribe anytime through the email footer. You can also request access, correction, or deletion of your data by email.",
+    returnPrompt: "Ready to go back and join before launch?",
     scope: "Applies to launch pages and newsletter onboarding routes only.",
     launchBack: "Back to launch",
     legalBack: "Back to homepage",
@@ -96,6 +98,7 @@ const dict: Record<
     rightsTitle: "Seus direitos e controle",
     rightsBody:
       "Voce pode cancelar a inscricao a qualquer momento pelo rodape do email. Tambem pode solicitar acesso, correcao ou exclusao dos seus dados por email.",
+    returnPrompt: "Tudo certo. Voltar e entrar antes do lancamento?",
     scope: "Valida apenas para paginas de lancamento e rotas de onboarding da newsletter.",
     launchBack: "Voltar ao lancamento",
     legalBack: "Voltar para home",
@@ -124,6 +127,7 @@ const dict: Record<
     rightsTitle: "Direitos e controlo",
     rightsBody:
       "Pode cancelar a subscricao a qualquer momento no rodape do email. Tambem pode pedir acesso, correcao ou eliminacao dos seus dados por email.",
+    returnPrompt: "Pronto. Voltar e entrar antes do lancamento?",
     scope: "Aplica-se apenas as paginas de lancamento e rotas de onboarding da newsletter.",
     launchBack: "Voltar ao lancamento",
     legalBack: "Voltar a homepage",
@@ -152,6 +156,7 @@ const dict: Record<
     rightsTitle: "Vos droits et votre controle",
     rightsBody:
       "Vous pouvez vous desabonner a tout moment via le pied d'email. Vous pouvez aussi demander l'acces, la correction ou la suppression de vos donnees par email.",
+    returnPrompt: "C'est bon. Retourner et rejoindre avant le lancement ?",
     scope: "Valable uniquement pour les pages de lancement et les routes d'onboarding de la newsletter.",
     launchBack: "Retour au lancement",
     legalBack: "Retour a l'accueil",
@@ -189,6 +194,12 @@ const localeLinks = LOCALES.map((item) => ({
           <p class="launch-privacy-eyebrow">{copy.subtitle}</p>
           <h1 class="launch-privacy-title">{copy.title}</h1>
           <p class="launch-privacy-intro">{copy.intro}</p>
+          <div class="launch-privacy-return launch-privacy-return--top">
+            <p>{copy.returnPrompt}</p>
+            <a class="launch-privacy-back launch-privacy-back--primary" href={`/${locale}`}>
+              {copy.launchBack}
+            </a>
+          </div>
 
           <section class="launch-privacy-section">
             <h2>{copy.collectedTitle}</h2>
@@ -215,10 +226,12 @@ const localeLinks = LOCALES.map((item) => ({
           <hr class="launch-privacy-divider" />
           <p class="launch-privacy-note">{copy.scope}</p>
           <p class="launch-privacy-date">{copy.effective}</p>
-
-          <a class="launch-privacy-back" href={`/${locale}`}>
-            {copy.launchBack}
-          </a>
+          <div class="launch-privacy-return launch-privacy-return--bottom">
+            <p>{copy.returnPrompt}</p>
+            <a class="launch-privacy-back launch-privacy-back--primary" href={`/${locale}`}>
+              {copy.launchBack}
+            </a>
+          </div>
         </article>
       </main>
     </div>
@@ -322,6 +335,33 @@ const localeLinks = LOCALES.map((item) => ({
     color: var(--flow-muted);
   }
 
+  .launch-privacy-return {
+    border: 1px solid var(--flow-border);
+    border-radius: 12px;
+    background: rgba(240, 235, 228, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 12px;
+  }
+
+  .launch-privacy-return p {
+    margin: 0;
+    font-family: var(--flow-font-ui);
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--flow-muted);
+  }
+
+  .launch-privacy-return--top {
+    margin: 0 0 8px;
+  }
+
+  .launch-privacy-return--bottom {
+    margin-top: 18px;
+  }
+
   .launch-privacy-section {
     margin-top: 20px;
   }
@@ -379,7 +419,6 @@ const localeLinks = LOCALES.map((item) => ({
   }
 
   .launch-privacy-back {
-    margin-top: 24px;
     display: inline-flex;
     align-items: center;
     gap: 7px;
@@ -391,10 +430,19 @@ const localeLinks = LOCALES.map((item) => ({
     color: var(--flow-red);
   }
 
-  .launch-privacy-back::before {
-    content: "<-";
-    font-size: 13px;
-    line-height: 1;
+  .launch-privacy-back--primary {
+    background: var(--flow-red);
+    border: 1px solid var(--flow-red);
+    color: #fff;
+    border-radius: 8px;
+    padding: 9px 12px;
+    letter-spacing: 0.09em;
+    transition: background-color 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .launch-privacy-back--primary:hover {
+    background: #9f3c33;
   }
 
   .sec-privacy {
@@ -453,6 +501,18 @@ const localeLinks = LOCALES.map((item) => ({
     .launch-privacy-section ul,
     .launch-privacy-section p {
       font-size: 17px;
+    }
+
+    .launch-privacy-return {
+      align-items: stretch;
+      flex-direction: column;
+      text-align: left;
+      gap: 10px;
+    }
+
+    .launch-privacy-back--primary {
+      width: 100%;
+      justify-content: center;
     }
   }
 </style>
