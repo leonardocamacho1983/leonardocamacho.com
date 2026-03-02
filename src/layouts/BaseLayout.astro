@@ -1,10 +1,13 @@
 ---
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
+import Telemetry from "@/components/analytics/Telemetry.astro";
 import { mapHtmlLang } from "@/lib/format";
 import type { LocaleKey } from "@/lib/locales";
 import type { LocaleLinkDTO, SiteSettingsDTO } from "@/lib/types";
 import { absoluteUrl } from "@/lib/seo";
+import Analytics from "@vercel/analytics/astro";
+import SpeedInsights from "@vercel/speed-insights/astro";
 import "@/styles/tokens.css";
 import "@/styles/base.css";
 import "@/styles/layout.css";
@@ -54,6 +57,7 @@ const htmlLang = mapHtmlLang(locale);
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
     {ogImage ? <meta property="og:image" content={ogImage} /> : null}
+    <Telemetry />
     <script is:inline>
       (() => {
         try {
@@ -88,5 +92,7 @@ const htmlLang = mapHtmlLang(locale);
       <Footer settings={settings} />
     </div>
     <script is:inline defer src="/js/microanim.js"></script>
+    <Analytics />
+    <SpeedInsights />
   </body>
 </html>

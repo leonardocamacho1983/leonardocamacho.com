@@ -105,6 +105,10 @@ const profileSaveWarningSaveFailed =
     const warningMissingToken = form?.dataset.warningMissingToken || '';
     const warningMissingSubscriber = form?.dataset.warningMissingSubscriber || '';
     const warningSaveFailed = form?.dataset.warningSaveFailed || '';
+    const trackEvent = (eventName: string, props: Record<string, string | number> = {}) => {
+      if (typeof window.lcTrack !== 'function') return;
+      window.lcTrack(eventName, props);
+    };
     const hasProtocol = (value: string) => /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
     const normalizeWebsite = (value: string) => {
       const trimmed = value.trim();
@@ -173,6 +177,7 @@ const profileSaveWarningSaveFailed =
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       clearSaveWarning();
+      trackEvent('confirmed_submit_clicked');
 
       const subscriberId = resolveSubscriberId();
       const updateToken = form?.dataset.updateToken?.trim() || '';
@@ -193,12 +198,14 @@ const profileSaveWarningSaveFailed =
       try {
         if (!subscriberId) {
           setSaveWarning(warningMissingSubscriber);
+          trackEvent('confirmed_submit_failed', { reason: 'missing_subscriber' });
           shouldReveal = false;
           return;
         }
 
         if (!updateToken) {
           setSaveWarning(warningMissingToken);
+          trackEvent('confirmed_submit_failed', { reason: 'missing_update_token' });
         } else {
           try {
             const response = await fetch('/api/update-subscriber', {
@@ -209,9 +216,13 @@ const profileSaveWarningSaveFailed =
 
             if (!response.ok) {
               setSaveWarning(warningSaveFailed);
+              trackEvent('confirmed_submit_failed', { reason: 'http_error', status: response.status });
+            } else {
+              trackEvent('confirmed_submit_success');
             }
           } catch {
             setSaveWarning(warningSaveFailed);
+            trackEvent('confirmed_submit_failed', { reason: 'network_error' });
           }
         }
       } finally {
@@ -223,6 +234,7 @@ const profileSaveWarningSaveFailed =
     });
 
     skip?.addEventListener('click', () => {
+      trackEvent('confirmed_skip_clicked');
       clearSaveWarning();
       showPostSubmit();
     });

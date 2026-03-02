@@ -30,10 +30,10 @@ const confirmedPath = subscriberId
       <div class="welcome-gap-sm"></div>
       <p class="flow-body flow-instruction">{c.welcomeInstruction}</p>
       <div class="flow-buttons">
-        <a href="https://mail.google.com/mail/" target="_blank" rel="noopener noreferrer" class="flow-btn flow-btn-primary">
+        <a id="welcomeOpenGmail" href="https://mail.google.com/mail/" target="_blank" rel="noopener noreferrer" class="flow-btn flow-btn-primary">
           {c.welcomeOpenGmail}
         </a>
-        <a href="https://outlook.live.com/mail/" target="_blank" rel="noopener noreferrer" class="flow-btn flow-btn-primary">
+        <a id="welcomeOpenOutlook" href="https://outlook.live.com/mail/" target="_blank" rel="noopener noreferrer" class="flow-btn flow-btn-primary">
           {c.welcomeOpenOutlook}
         </a>
       </div>
@@ -42,7 +42,7 @@ const confirmedPath = subscriberId
         <p class="flow-subject-text">{c.welcomeSubjectLine}</p>
       </div>
       <div class="welcome-continue">
-        <a href={confirmedPath} class="flow-btn flow-btn-primary">{c.welcomeContinueCta}</a>
+        <a id="welcomeContinueConfirmed" href={confirmedPath} class="flow-btn flow-btn-primary">{c.welcomeContinueCta}</a>
       </div>
     </div>
   </main>

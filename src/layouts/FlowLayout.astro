@@ -1,11 +1,16 @@
 ---
+import Telemetry from "@/components/analytics/Telemetry.astro";
+import Analytics from "@vercel/analytics/astro";
+import SpeedInsights from "@vercel/speed-insights/astro";
+
 interface Props {
   title: string;
   description: string;
   lang?: string;
+  robots?: string;
 }
 
-const { title, description, lang = 'en' } = Astro.props;
+const { title, description, lang = 'en', robots = 'noindex' } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -15,13 +20,16 @@ const { title, description, lang = 'en' } = Astro.props;
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
   <meta name="description" content={description}>
-  <meta name="robots" content="noindex">
+  <meta name="robots" content={robots}>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;1,400&family=DM+Sans:wght@400;500;600&display=optional" rel="stylesheet">
+  <Telemetry />
 </head>
 <body class="flow-page">
   <slot />
+  <Analytics />
+  <SpeedInsights />
   <style is:global>
     * {
       margin: 0;

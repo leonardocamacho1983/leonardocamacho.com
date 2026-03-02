@@ -1,4 +1,9 @@
 <script is:inline>
+  const trackEvent = (eventName, props = {}) => {
+    if (typeof window.lcTrack !== 'function') return;
+    window.lcTrack(eventName, props);
+  };
+
   const resolveKitLocale = (path) => {
     if (path.startsWith('/pt-br')) return 'pt_BR';
     if (path.startsWith('/pt-pt') || path.startsWith('/pt/')) return 'pt_PT';
@@ -51,6 +56,7 @@
       btn.disabled = true;
       btn.textContent = 'Sending...';
       if (errorEl) errorEl.textContent = '';
+      trackEvent('launch_submit_clicked');
 
       try {
         const res = await fetch('/api/subscribe', {
@@ -72,6 +78,7 @@
           } catch {}
 
           persistSubscriberId(subscriberId);
+          trackEvent('launch_subscribe_success');
 
           formWrap?.classList.add('is-hidden');
           successWrap?.classList.add('is-visible');
@@ -81,8 +88,10 @@
           return;
         }
 
+        trackEvent('launch_subscribe_failed', { reason: 'http_error', status: res.status });
         if (errorEl) errorEl.textContent = 'Something went wrong. Please try again.';
       } catch {
+        trackEvent('launch_subscribe_failed', { reason: 'network_error' });
         if (errorEl) errorEl.textContent = 'Something went wrong. Please try again.';
       }
 

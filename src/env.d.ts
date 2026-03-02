@@ -17,6 +17,8 @@ interface ImportMetaEnv {
   readonly KIT_API_BASE_URL?: string;
   readonly KIT_FORM_ID?: string;
   readonly PUBLIC_LAUNCH_ILLUSTRATION_DEBUG?: string;
+  readonly PUBLIC_POSTHOG_KEY?: string;
+  readonly PUBLIC_POSTHOG_HOST?: string;
   readonly NEWSLETTER_CONFIRMATION_SUBJECT?: string;
   readonly NEWSLETTER_FLOW_SECRET?: string;
   readonly NEWSLETTER_CONSENT_POLICY_VERSION?: string;
@@ -25,4 +27,13 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+}
+
+interface Window {
+  lcTrack?: (eventName: string, props?: Record<string, string | number | boolean>) => void;
+  posthog?: {
+    capture: (eventName: string, properties?: Record<string, unknown>) => void;
+    init: (...args: unknown[]) => void;
+    [key: string]: unknown;
+  };
 }
