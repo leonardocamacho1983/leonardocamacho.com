@@ -3,8 +3,16 @@ const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY || '';
 const posthogHost = import.meta.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 ---
 
-<script is:inline define:vars={{ posthogKey, posthogHost }}>
+<script is:inline data-posthog-key={posthogKey} data-posthog-host={posthogHost}>
   (() => {
+    const scriptEl = document.currentScript;
+    const posthogKey =
+      scriptEl instanceof HTMLScriptElement ? scriptEl.dataset.posthogKey || '' : '';
+    const posthogHost =
+      scriptEl instanceof HTMLScriptElement
+        ? scriptEl.dataset.posthogHost || 'https://us.i.posthog.com'
+        : 'https://us.i.posthog.com';
+
     const hasPosthog = Boolean(posthogKey);
     const CONSENT_KEY = 'lc_analytics_consent_v1';
     const CONSENT_ACCEPTED = 'accepted';
