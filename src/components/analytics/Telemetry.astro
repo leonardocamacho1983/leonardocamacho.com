@@ -39,8 +39,8 @@ const posthogHost = import.meta.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog
 
     const detectLocale = (path) => {
       if (path.startsWith('/pt-br')) return 'pt-br';
-      if (path.startsWith('/pt-pt') || path.startsWith('/pt/')) return 'pt-pt';
-      if (path.startsWith('/fr-fr') || path.startsWith('/fr/')) return 'fr-fr';
+      if (path.startsWith('/pt-pt') || path === '/pt' || path.startsWith('/pt/')) return 'pt-pt';
+      if (path.startsWith('/fr-fr') || path === '/fr' || path.startsWith('/fr/')) return 'fr-fr';
       if (path.startsWith('/en-gb')) return 'en-gb';
       return 'en-us';
     };
@@ -179,34 +179,44 @@ const posthogHost = import.meta.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog
     const getConsentCopy = (localeKey) => {
       const dict = {
         'en-us': {
-          message: 'We use privacy-friendly analytics to improve this site.',
-          accept: 'Accept analytics',
-          reject: 'Reject',
-          policy: 'Privacy policy',
+          title: 'Privacy, your call.',
+          message:
+            'If you accept, we use lightweight analytics to improve the reading experience. We never sell personal data.',
+          accept: 'Allow analytics',
+          reject: 'No thanks',
+          policy: 'Read privacy policy',
         },
         'en-gb': {
-          message: 'We use privacy-friendly analytics to improve this site.',
-          accept: 'Accept analytics',
-          reject: 'Reject',
-          policy: 'Privacy policy',
+          title: 'Privacy, your call.',
+          message:
+            'If you accept, we use lightweight analytics to improve the reading experience. We never sell personal data.',
+          accept: 'Allow analytics',
+          reject: 'No thanks',
+          policy: 'Read privacy policy',
         },
         'pt-br': {
-          message: 'Usamos analytics para melhorar o site.',
-          accept: 'Aceitar analytics',
-          reject: 'Recusar',
-          policy: 'Política de privacidade',
+          title: 'Privacidade, sua escolha.',
+          message:
+            'Se você aceitar, usamos analytics leves para melhorar a experiência de leitura. Nunca vendemos dados pessoais.',
+          accept: 'Permitir analytics',
+          reject: 'Agora não',
+          policy: 'Ler política de privacidade',
         },
         'pt-pt': {
-          message: 'Usamos analytics para melhorar o site.',
-          accept: 'Aceitar analytics',
-          reject: 'Recusar',
-          policy: 'Política de privacidade',
+          title: 'Privacidade, a sua escolha.',
+          message:
+            'Se aceitar, usamos analytics leves para melhorar a experiência de leitura. Nunca vendemos dados pessoais.',
+          accept: 'Permitir analytics',
+          reject: 'Agora não',
+          policy: 'Ler política de privacidade',
         },
         'fr-fr': {
-          message: 'Nous utilisons des analytics pour améliorer le site.',
-          accept: 'Accepter',
-          reject: 'Refuser',
-          policy: 'Politique de confidentialité',
+          title: 'Confidentialité, votre choix.',
+          message:
+            'Si vous acceptez, nous utilisons des analytics légers pour améliorer la lecture. Nous ne vendons jamais de données personnelles.',
+          accept: 'Autoriser les analytics',
+          reject: 'Pas maintenant',
+          policy: 'Lire la politique de confidentialité',
         },
       };
       return dict[localeKey] || dict['en-us'];
@@ -222,10 +232,10 @@ const posthogHost = import.meta.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog
       banner.id = 'lcConsentBanner';
       banner.className = 'lc-consent-banner';
       banner.innerHTML = `
-        <p class="lc-consent-banner__copy">
-          ${copy.message}
-          <a href="${privacyPath}" class="lc-consent-banner__link">${copy.policy}</a>.
-        </p>
+        <div class="lc-consent-banner__text">
+          <p class="lc-consent-banner__title">${copy.title}</p>
+          <p class="lc-consent-banner__copy">${copy.message} <a href="${privacyPath}" class="lc-consent-banner__link">${copy.policy}</a>.</p>
+        </div>
         <div class="lc-consent-banner__actions">
           <button type="button" class="lc-consent-banner__btn lc-consent-banner__btn--ghost" id="lcConsentReject">${copy.reject}</button>
           <button type="button" class="lc-consent-banner__btn lc-consent-banner__btn--primary" id="lcConsentAccept">${copy.accept}</button>
@@ -302,73 +312,109 @@ const posthogHost = import.meta.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog
   .lc-consent-banner {
     position: fixed;
     z-index: 120;
-    left: 16px;
-    right: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(940px, calc(100% - 20px));
     bottom: calc(14px + env(safe-area-inset-bottom));
-    border: 1px solid rgba(204, 192, 178, 0.9);
-    border-radius: 12px;
-    background: rgba(247, 243, 238, 0.98);
-    box-shadow: 0 10px 28px rgba(42, 34, 32, 0.16);
-    padding: 12px 14px;
+    border: 1px solid rgba(205, 191, 177, 0.95);
+    border-top: 2px solid rgba(181, 69, 58, 0.7);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(249, 245, 239, 0.98), rgba(242, 236, 227, 0.97));
+    box-shadow: 0 16px 36px rgba(42, 34, 32, 0.2);
+    padding: 14px 16px;
     display: grid;
-    gap: 10px;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
     backdrop-filter: blur(6px);
+  }
+
+  .lc-consent-banner__text {
+    min-width: 0;
+  }
+
+  .lc-consent-banner__title {
+    margin: 0 0 4px;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.1;
+    color: #1a1715;
   }
 
   .lc-consent-banner__copy {
     margin: 0;
     font-family: "DM Sans", Arial, sans-serif;
-    font-size: 12px;
-    line-height: 1.4;
+    font-size: 13px;
+    line-height: 1.5;
     color: #5a4f47;
   }
 
   .lc-consent-banner__link {
-    color: #8a7d74;
+    color: #2a2220;
+    font-weight: 500;
     text-underline-offset: 2px;
   }
 
   .lc-consent-banner__actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 8px;
     flex-wrap: wrap;
   }
 
   .lc-consent-banner__btn {
     font-family: "DM Sans", Arial, sans-serif;
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     border-radius: 8px;
-    padding: 9px 12px;
-    border: 1px solid #ccc0b2;
+    padding: 10px 14px;
+    border: 1px solid #bfb09f;
     background: transparent;
     color: #2a2220;
     cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+  }
+
+  .lc-consent-banner__btn:hover {
+    background: rgba(217, 205, 191, 0.28);
   }
 
   .lc-consent-banner__btn--primary {
-    background: #1a1715;
-    color: #f0ebe4;
-    border-color: #1a1715;
+    background: #b5453a;
+    color: #fff;
+    border-color: #b5453a;
   }
 
-  @media (max-width: 540px) {
+  .lc-consent-banner__btn--primary:hover {
+    background: #a43e34;
+    border-color: #a43e34;
+  }
+
+  @media (max-width: 760px) {
     .lc-consent-banner {
-      left: 10px;
-      right: 10px;
-      padding: 10px 12px;
+      width: min(940px, calc(100% - 14px));
+      padding: 12px 13px;
+      grid-template-columns: 1fr;
     }
 
     .lc-consent-banner__actions {
       width: 100%;
-      justify-content: stretch;
+      justify-content: flex-start;
     }
 
     .lc-consent-banner__btn {
-      flex: 1 1 auto;
+      flex: 1 1 calc(50% - 6px);
       min-width: 0;
+    }
+
+    .lc-consent-banner__title {
+      font-size: 16px;
+    }
+
+    .lc-consent-banner__copy {
+      font-size: 12px;
     }
   }
 </style>

@@ -1,10 +1,14 @@
 ---
 export const prerender = false;
 
+import FlowLayout from "@/layouts/FlowLayout.astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import EditorialIllustration from "@/components/launch/EditorialIllustration.astro";
 import { LOCALES, localizedPath } from "@/lib/locales";
 import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
 import { getSiteSettings } from "@/lib/sanity/api";
+
+const isLaunchMode = import.meta.env.PUBLIC_LAUNCH_MODE === "true";
 
 const rawLocale = Astro.params.locale;
 const locale = getLocaleOrDefault(rawLocale);
@@ -12,8 +16,154 @@ if (!rawLocale || rawLocale.toLowerCase() !== locale) {
   return Astro.redirect(localizedPath("en-us", "home"), 302);
 }
 
+type CopyKey = "en" | "pt-br" | "pt" | "fr";
+const copyKeyByLocale: Record<string, CopyKey> = {
+  "en-us": "en",
+  "en-gb": "en",
+  "pt-br": "pt-br",
+  "pt-pt": "pt",
+  "fr-fr": "fr",
+};
+const copyKey = copyKeyByLocale[locale] || "en";
+
+const dict: Record<
+  CopyKey,
+  {
+    lang: string;
+    title: string;
+    subtitle: string;
+    intro: string;
+    collectedTitle: string;
+    collectedItems: string[];
+    usageTitle: string;
+    usageItems: string[];
+    rightsTitle: string;
+    rightsBody: string;
+    scope: string;
+    launchBack: string;
+    legalBack: string;
+    effective: string;
+  }
+> = {
+  en: {
+    lang: "en",
+    title: "Newsletter Privacy Policy",
+    subtitle: "Launch phase",
+    intro:
+      "This policy explains what we collect during launch signup and how it is used to run The Compounding Letter.",
+    collectedTitle: "What we collect",
+    collectedItems: [
+      "Email address",
+      "Language and signup source",
+      "Optional profile details you submit in the confirmed form",
+      "Optional anonymous usage analytics, only after consent",
+    ],
+    usageTitle: "How we use your data",
+    usageItems: [
+      "Send launch and newsletter emails",
+      "Personalize relevance by locale and profile signals",
+      "Measure aggregate product and content performance",
+      "Improve writing, onboarding, and deliverability",
+    ],
+    rightsTitle: "Your rights and control",
+    rightsBody:
+      "You can unsubscribe anytime through the email footer. You can also request access, correction, or deletion of your data by email.",
+    scope: "Applies to launch pages and newsletter onboarding routes only.",
+    launchBack: "Back to launch",
+    legalBack: "Back to homepage",
+    effective: "Effective date: March 2, 2026",
+  },
+  "pt-br": {
+    lang: "pt-BR",
+    title: "Politica de Privacidade da Newsletter",
+    subtitle: "Fase de lancamento",
+    intro:
+      "Esta politica explica o que coletamos durante o cadastro de lancamento e como isso e usado para operar The Compounding Letter.",
+    collectedTitle: "O que coletamos",
+    collectedItems: [
+      "Endereco de email",
+      "Idioma e origem da inscricao",
+      "Dados opcionais de perfil enviados no formulario de confirmacao",
+      "Analytics anonimo opcional, somente apos consentimento",
+    ],
+    usageTitle: "Como usamos os dados",
+    usageItems: [
+      "Enviar comunicacoes de lancamento e newsletter",
+      "Melhorar relevancia editorial por idioma e perfil",
+      "Medir desempenho agregado de produto e conteudo",
+      "Melhorar escrita, onboarding e entregabilidade",
+    ],
+    rightsTitle: "Seus direitos e controle",
+    rightsBody:
+      "Voce pode cancelar a inscricao a qualquer momento pelo rodape do email. Tambem pode solicitar acesso, correcao ou exclusao dos seus dados por email.",
+    scope: "Valida apenas para paginas de lancamento e rotas de onboarding da newsletter.",
+    launchBack: "Voltar ao lancamento",
+    legalBack: "Voltar para home",
+    effective: "Data de vigencia: 2 de marco de 2026",
+  },
+  pt: {
+    lang: "pt-PT",
+    title: "Politica de Privacidade da Newsletter",
+    subtitle: "Fase de lancamento",
+    intro:
+      "Esta politica explica o que recolhemos durante a inscricao de lancamento e como isso e usado para operar The Compounding Letter.",
+    collectedTitle: "O que recolhemos",
+    collectedItems: [
+      "Endereco de email",
+      "Idioma e origem da inscricao",
+      "Dados opcionais de perfil submetidos no formulario de confirmacao",
+      "Analytics anonimo opcional, apenas apos consentimento",
+    ],
+    usageTitle: "Como usamos os dados",
+    usageItems: [
+      "Enviar comunicacoes de lancamento e newsletter",
+      "Melhorar relevancia editorial por idioma e sinais de perfil",
+      "Medir desempenho agregado de produto e conteudo",
+      "Melhorar escrita, onboarding e entregabilidade",
+    ],
+    rightsTitle: "Direitos e controlo",
+    rightsBody:
+      "Pode cancelar a subscricao a qualquer momento no rodape do email. Tambem pode pedir acesso, correcao ou eliminacao dos seus dados por email.",
+    scope: "Aplica-se apenas as paginas de lancamento e rotas de onboarding da newsletter.",
+    launchBack: "Voltar ao lancamento",
+    legalBack: "Voltar a homepage",
+    effective: "Data de entrada em vigor: 2 de marco de 2026",
+  },
+  fr: {
+    lang: "fr",
+    title: "Politique de Confidentialite de la Newsletter",
+    subtitle: "Phase de lancement",
+    intro:
+      "Cette politique explique ce que nous collectons pendant l'inscription de lancement et comment ces donnees sont utilisees pour The Compounding Letter.",
+    collectedTitle: "Ce que nous collectons",
+    collectedItems: [
+      "Adresse email",
+      "Langue et source d'inscription",
+      "Informations de profil optionnelles soumises dans le formulaire de confirmation",
+      "Analytics anonymes optionnels, uniquement apres consentement",
+    ],
+    usageTitle: "Comment nous utilisons les donnees",
+    usageItems: [
+      "Envoyer les emails de lancement et la newsletter",
+      "Ameliorer la pertinence editoriale selon la langue et le profil",
+      "Mesurer la performance agregee du produit et du contenu",
+      "Ameliorer l'ecriture, l'onboarding et la delivrabilite",
+    ],
+    rightsTitle: "Vos droits et votre controle",
+    rightsBody:
+      "Vous pouvez vous desabonner a tout moment via le pied d'email. Vous pouvez aussi demander l'acces, la correction ou la suppression de vos donnees par email.",
+    scope: "Valable uniquement pour les pages de lancement et les routes d'onboarding de la newsletter.",
+    launchBack: "Retour au lancement",
+    legalBack: "Retour a l'accueil",
+    effective: "Date d'effet: 2 mars 2026",
+  },
+};
+
+const copy = dict[copyKey];
 const isPreview = isPreviewRequest(Astro.cookies);
-const settings = await getSiteSettings(locale, isPreview);
+
+const settings = isLaunchMode ? null : await getSiteSettings(locale, isPreview);
+const contactEmail = settings?.contactEmail || "hello@leonardocamacho.com";
 
 const localeLinks = LOCALES.map((item) => ({
   locale: item.key,
@@ -24,44 +174,285 @@ const localeLinks = LOCALES.map((item) => ({
 }));
 ---
 
-<BaseLayout
-  locale={locale}
-  settings={settings}
-  localeLinks={localeLinks}
-  title={`${settings.siteTitle} | Privacy Policy`}
-  description="Privacy policy for newsletter subscriptions."
-  canonicalPath={`/${locale}/privacy`}
-  isPreview={isPreview}
->
-  <section class="sec-privacy">
-    <div class="container">
-      <article class="privacy-card">
-        <h1>Newsletter Privacy Policy</h1>
-        <p>
-          By subscribing, you agree to receive occasional newsletter emails from Leonardo Camacho.
-          You can unsubscribe at any time through the link included in every email.
-        </p>
+{isLaunchMode ? (
+  <FlowLayout
+    title={`Leonardo Camacho - ${copy.title}`}
+    description={copy.intro}
+    lang={copy.lang}
+    robots="index,follow"
+  >
+    <div class="launch-privacy-page">
+      <EditorialIllustration />
 
-        <h2>What We Collect</h2>
-        <ul>
-          <li>Email address</li>
-          <li>Language and signup source information</li>
-          <li>Optional profile survey details you provide</li>
-        </ul>
+      <main class="launch-privacy-main">
+        <article class="launch-privacy-card">
+          <p class="launch-privacy-eyebrow">{copy.subtitle}</p>
+          <h1 class="launch-privacy-title">{copy.title}</h1>
+          <p class="launch-privacy-intro">{copy.intro}</p>
 
-        <h2>How We Use Your Data</h2>
-        <ul>
-          <li>Send newsletter updates and essays</li>
-          <li>Improve editorial relevance by locale and audience profile</li>
-          <li>Measure aggregate content impact</li>
-        </ul>
+          <section class="launch-privacy-section">
+            <h2>{copy.collectedTitle}</h2>
+            <ul>
+              {copy.collectedItems.map((item) => <li>{item}</li>)}
+            </ul>
+          </section>
 
-        <h2>Unsubscribe and Data Requests</h2>
-        <p>
-          You may unsubscribe anytime via the email footer link. For data access, correction, or
-          deletion requests, contact: {settings.contactEmail}.
-        </p>
-      </article>
+          <section class="launch-privacy-section">
+            <h2>{copy.usageTitle}</h2>
+            <ul>
+              {copy.usageItems.map((item) => <li>{item}</li>)}
+            </ul>
+          </section>
+
+          <section class="launch-privacy-section">
+            <h2>{copy.rightsTitle}</h2>
+            <p>{copy.rightsBody}</p>
+            <p>
+              Contact: <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+            </p>
+          </section>
+
+          <hr class="launch-privacy-divider" />
+          <p class="launch-privacy-note">{copy.scope}</p>
+          <p class="launch-privacy-date">{copy.effective}</p>
+
+          <a class="launch-privacy-back" href={`/${locale}`}>
+            {copy.launchBack}
+          </a>
+        </article>
+      </main>
     </div>
-  </section>
-</BaseLayout>
+  </FlowLayout>
+) : (
+  <BaseLayout
+    locale={locale}
+    settings={settings!}
+    localeLinks={localeLinks}
+    title={`${settings!.siteTitle} | ${copy.title}`}
+    description={copy.intro}
+    canonicalPath={`/${locale}/privacy`}
+    isPreview={isPreview}
+  >
+    <section class="sec-privacy">
+      <div class="container">
+        <article class="privacy-card">
+          <h1>{copy.title}</h1>
+          <p>{copy.intro}</p>
+
+          <h2>{copy.collectedTitle}</h2>
+          <ul>
+            {copy.collectedItems.map((item) => <li>{item}</li>)}
+          </ul>
+
+          <h2>{copy.usageTitle}</h2>
+          <ul>
+            {copy.usageItems.map((item) => <li>{item}</li>)}
+          </ul>
+
+          <h2>{copy.rightsTitle}</h2>
+          <p>{copy.rightsBody}</p>
+          <p>
+            Contact: <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+          </p>
+          <p>{copy.effective}</p>
+          <a class="privacy-back-link" href={`/${locale}`}>{copy.legalBack}</a>
+        </article>
+      </div>
+    </section>
+  </BaseLayout>
+)}
+
+<style>
+  .launch-privacy-page {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100svh;
+    width: 100%;
+    background: var(--flow-cream);
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .launch-privacy-main {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 54px 24px;
+    display: grid;
+    place-items: center;
+  }
+
+  .launch-privacy-card {
+    width: min(760px, 100%);
+    border: 1px solid var(--flow-border);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--flow-card) 90%, transparent);
+    box-shadow: 0 22px 50px rgba(42, 34, 32, 0.08);
+    backdrop-filter: blur(2px);
+    padding: 34px 34px 30px;
+    text-align: left;
+  }
+
+  .launch-privacy-eyebrow {
+    margin: 0 0 8px;
+    font-family: var(--flow-font-ui);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--flow-stone);
+  }
+
+  .launch-privacy-title {
+    margin: 0;
+    font-family: var(--flow-font-display);
+    font-size: clamp(34px, 5vw, 42px);
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--flow-near-black);
+  }
+
+  .launch-privacy-intro {
+    margin: 14px 0 28px;
+    font-family: var(--flow-font-body);
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--flow-muted);
+  }
+
+  .launch-privacy-section {
+    margin-top: 20px;
+  }
+
+  .launch-privacy-section h2 {
+    margin: 0 0 9px;
+    font-family: var(--flow-font-display);
+    font-size: 31px;
+    line-height: 1.1;
+    font-weight: 400;
+    color: var(--flow-near-black);
+  }
+
+  .launch-privacy-section ul {
+    margin: 0;
+    padding-left: 22px;
+    display: grid;
+    gap: 7px;
+    font-family: var(--flow-font-body);
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--flow-body);
+  }
+
+  .launch-privacy-section p {
+    margin: 0 0 8px;
+    font-family: var(--flow-font-body);
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--flow-body);
+  }
+
+  .launch-privacy-section a {
+    color: var(--flow-red);
+    text-underline-offset: 2px;
+  }
+
+  .launch-privacy-divider {
+    margin: 20px 0 14px;
+    border: none;
+    border-top: 1px solid var(--flow-border);
+  }
+
+  .launch-privacy-note,
+  .launch-privacy-date {
+    margin: 0;
+    font-family: var(--flow-font-ui);
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    color: var(--flow-stone);
+  }
+
+  .launch-privacy-date {
+    margin-top: 6px;
+  }
+
+  .launch-privacy-back {
+    margin-top: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    text-decoration: none;
+    font-family: var(--flow-font-ui);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--flow-red);
+  }
+
+  .launch-privacy-back::before {
+    content: "<-";
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .sec-privacy {
+    padding: 56px 0 76px;
+  }
+
+  .privacy-card {
+    max-width: 760px;
+    margin: 0 auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    background: var(--surface-raised);
+    padding: 28px 30px;
+  }
+
+  .privacy-card h1,
+  .privacy-card h2 {
+    margin: 0 0 8px;
+  }
+
+  .privacy-card p {
+    margin: 0 0 14px;
+  }
+
+  .privacy-card ul {
+    margin: 0 0 18px;
+    padding-left: 22px;
+  }
+
+  .privacy-back-link {
+    display: inline-flex;
+    margin-top: 10px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  @media (max-width: 760px) {
+    .launch-privacy-main {
+      padding: 24px 14px 120px;
+      align-items: start;
+    }
+
+    .launch-privacy-card {
+      border-radius: 14px;
+      padding: 24px 18px;
+    }
+
+    .launch-privacy-intro {
+      font-size: 17px;
+    }
+
+    .launch-privacy-section h2 {
+      font-size: 29px;
+    }
+
+    .launch-privacy-section ul,
+    .launch-privacy-section p {
+      font-size: 17px;
+    }
+  }
+</style>
