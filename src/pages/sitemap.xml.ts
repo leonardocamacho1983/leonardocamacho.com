@@ -19,10 +19,23 @@ const escapeXml = (value: string) =>
 
 const normalizeOrigin = (value: string) => value.replace(/\/+$/, "");
 
-const getOrigin = (requestUrl: URL) => {
+const getRequestOrigin = (request: Request, requestUrl: URL) => {
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = forwardedHost || request.headers.get("host")?.split(",")[0]?.trim();
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+
+  if (host) {
+    const protocol = forwardedProto || requestUrl.protocol.replace(":", "") || "https";
+    return normalizeOrigin(`${protocol}://${host}`);
+  }
+
+  return normalizeOrigin(requestUrl.origin);
+};
+
+const getOrigin = (request: Request, requestUrl: URL) => {
   const configured = (import.meta.env.PUBLIC_SITE_URL || "").trim();
   if (!configured) {
-    return normalizeOrigin(requestUrl.origin);
+    return getRequestOrigin(request, requestUrl);
   }
 
   try {
@@ -32,11 +45,11 @@ const getOrigin = (requestUrl: URL) => {
       parsed.hostname === "127.0.0.1" ||
       parsed.hostname === "::1"
     ) {
-      return normalizeOrigin(requestUrl.origin);
+      return getRequestOrigin(request, requestUrl);
     }
     return normalizeOrigin(parsed.origin);
   } catch {
-    return normalizeOrigin(requestUrl.origin);
+    return getRequestOrigin(request, requestUrl);
   }
 };
 
@@ -47,8 +60,8 @@ const validIsoDate = (value: string) => {
   return Number.isNaN(parsed.valueOf()) ? undefined : parsed.toISOString();
 };
 
-export const GET: APIRoute = async ({ url }) => {
-  const origin = getOrigin(url);
+export const GET: APIRoute = async ({ request, url }) => {
+  const origin = getOrigin(request, url);
   const entries = new Map<string, SitemapEntry>();
 
   const localePaths = LOCALES.flatMap(({ key }) => [
