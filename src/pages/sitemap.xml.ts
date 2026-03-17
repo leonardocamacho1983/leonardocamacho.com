@@ -26,7 +26,15 @@ const getOrigin = (requestUrl: URL) => {
   }
 
   try {
-    return normalizeOrigin(new URL(configured).origin);
+    const parsed = new URL(configured);
+    if (
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "::1"
+    ) {
+      return normalizeOrigin(requestUrl.origin);
+    }
+    return normalizeOrigin(parsed.origin);
   } catch {
     return normalizeOrigin(requestUrl.origin);
   }
