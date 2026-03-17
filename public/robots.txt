@@ -1,2 +1,46 @@
 User-agent: *
 Allow: /
+Disallow: /studio
+Disallow: /studio/
+Disallow: /api
+Disallow: /api/
+Disallow: /api/preview
+Disallow: /api/exit-preview
+
+# AI crawlers: explicitly allowed for discovery.
+User-agent: GPTBot
+Allow: /
+Disallow: /studio
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /studio
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /studio
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /studio
+Disallow: /api/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /studio
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /studio
+Disallow: /api/
+
+User-agent: CCBot
+Allow: /
+Disallow: /studio
+Disallow: /api/
+
+Sitemap: https://www.leonardocamacho.com/sitemap.xml

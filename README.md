@@ -104,3 +104,11 @@ Exit preview with:
 
 The app is configured with `@astrojs/vercel` and `output: "server"`.
 Set the same environment variables in Vercel before deployment.
+
+## Indexing and Search Console
+
+See [guidelines/indexing-and-ai.md](./guidelines/indexing-and-ai.md) for:
+
+- Google Search Console DNS verification setup
+- `robots.txt` and `sitemap.xml` policy
+- AI indexing guidance via `llms.txt`

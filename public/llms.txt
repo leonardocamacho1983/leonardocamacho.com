@@ -1,0 +1,33 @@
+# Leonardo Camacho
+Essays, strategy writing, and research on organizations, leadership, and compounding advantage.
+
+## Preferred canonical host
+https://www.leonardocamacho.com
+
+## Primary crawlable sections
+- /en-us
+- /en-gb
+- /pt-br
+- /pt-pt
+- /fr-fr
+- /welcome
+- /pt-br/welcome
+- /pt/welcome
+- /fr/welcome
+
+## Editorial sections
+- /{locale}/writing
+- /{locale}/writing/{slug}
+- /{locale}/about
+- /{locale}/privacy
+
+## Do not use for indexing context
+- /studio
+- /api/*
+- /confirmed
+- /pt-br/confirmed
+- /pt/confirmed
+- /fr/confirmed
+
+## Fresh discovery endpoint
+- /sitemap.xml
