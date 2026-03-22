@@ -29,6 +29,8 @@ Copy `.env.example` to `.env` and fill values:
 - `SANITY_API_READ_TOKEN` (for preview/drafts)
 - `SANITY_PREVIEW_SECRET`
 - `SANITY_API_WRITE_TOKEN` (for seeding script)
+- `SANITY_WEBHOOK_BEARER_TOKEN` (auth for incoming Sanity webhook endpoint)
+- `SANITY_WEBHOOK_ALLOWED_DATASETS` (comma-separated dataset allowlist)
 - `KIT_API_KEY`
 - `KIT_API_BASE_URL`
 - `KIT_FORM_ID`
@@ -104,6 +106,13 @@ Exit preview with:
 
 The app is configured with `@astrojs/vercel` and `output: "server"`.
 Set the same environment variables in Vercel before deployment.
+
+## Sanity Webhooks and Releases
+
+- Incoming webhook endpoint: `POST /api/sanity/webhook`
+- Health check: `GET /api/sanity/webhook`
+- Setup + workflow runbook:
+  [guidelines/sanity-webhooks-and-releases.md](./guidelines/sanity-webhooks-and-releases.md)
 
 ## Indexing and Search Console
 

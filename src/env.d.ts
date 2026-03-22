@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   readonly SANITY_API_READ_TOKEN?: string;
   readonly SANITY_API_WRITE_TOKEN?: string;
   readonly SANITY_PREVIEW_SECRET?: string;
+  readonly SANITY_WEBHOOK_BEARER_TOKEN?: string;
+  readonly SANITY_WEBHOOK_ALLOWED_DATASETS?: string;
   readonly KIT_API_KEY?: string;
   readonly KIT_API_BASE_URL?: string;
   readonly KIT_FORM_ID?: string;
