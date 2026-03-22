@@ -21,6 +21,7 @@ interface Props {
   description?: string;
   canonicalPath: string;
   isPreview?: boolean;
+  structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
 const {
@@ -31,13 +32,35 @@ const {
   description,
   canonicalPath,
   isPreview = false,
+  structuredData,
 } = Astro.props;
 
 const pageTitle = title || settings.seoTitle;
 const pageDescription = description || settings.seoDescription;
-const canonicalUrl = absoluteUrl(canonicalPath);
-const ogImage = settings.seoImage ? absoluteUrl(`/api/og?locale=${locale}`) : undefined;
+const canonicalUrl = absoluteUrl(canonicalPath, Astro.url);
+const availableLocaleLinks = localeLinks.filter((link) => link.available !== false);
+const xDefaultPath = availableLocaleLinks[0]?.href || canonicalPath;
+const ogImage = settings.seoImage ? absoluteUrl(`/api/og?locale=${locale}`, Astro.url) : undefined;
 const htmlLang = mapHtmlLang(locale);
+const defaultStructuredData: Array<Record<string, unknown>> = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: settings.siteTitle,
+    url: absoluteUrl("/", Astro.url),
+    inLanguage: htmlLang,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: settings.siteTitle,
+    url: absoluteUrl(`/${locale}`, Astro.url),
+  },
+];
+const pageStructuredData = structuredData
+  ? (Array.isArray(structuredData) ? structuredData : [structuredData])
+  : [];
+const schemaBlocks = [...defaultStructuredData, ...pageStructuredData];
 ---
 
 <!doctype html>
@@ -48,15 +71,18 @@ const htmlLang = mapHtmlLang(locale);
     <title>{pageTitle}</title>
     <meta name="description" content={pageDescription} />
     <link rel="canonical" href={canonicalUrl} />
-    {localeLinks.map((link) => (
-      <link rel="alternate" hreflang={mapHtmlLang(link.locale)} href={absoluteUrl(link.href)} />
+    {availableLocaleLinks.map((link) => (
+      <link rel="alternate" hreflang={mapHtmlLang(link.locale)} href={absoluteUrl(link.href, Astro.url)} />
     ))}
-    <link rel="alternate" hreflang="x-default" href={absoluteUrl(localeLinks[0]?.href || canonicalPath)} />
+    <link rel="alternate" hreflang="x-default" href={absoluteUrl(xDefaultPath, Astro.url)} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={pageDescription} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
     {ogImage ? <meta property="og:image" content={ogImage} /> : null}
+    {schemaBlocks.map((item) => (
+      <script type="application/ld+json" set:html={JSON.stringify(item)}></script>
+    ))}
     <Telemetry />
     <script is:inline>
       (() => {

@@ -1,5 +1,6 @@
 ---
 import Telemetry from "@/components/analytics/Telemetry.astro";
+import { absoluteUrl } from "@/lib/seo";
 import Analytics from "@vercel/analytics/astro";
 import SpeedInsights from "@vercel/speed-insights/astro";
 
@@ -8,9 +9,24 @@ interface Props {
   description: string;
   lang?: string;
   robots?: string;
+  canonicalPath?: string;
+  alternateLinks?: Array<{ hrefLang: string; href: string }>;
+  xDefaultHref?: string;
 }
 
-const { title, description, lang = 'en', robots = 'noindex' } = Astro.props;
+const {
+  title,
+  description,
+  lang = "en",
+  robots = "noindex",
+  canonicalPath,
+  alternateLinks = [],
+  xDefaultHref,
+} = Astro.props;
+
+const canonicalUrl = absoluteUrl(canonicalPath || Astro.url.pathname, Astro.url);
+const cleanedAlternates = alternateLinks.filter((link) => Boolean(link.hrefLang && link.href));
+const xDefaultPath = xDefaultHref || cleanedAlternates[0]?.href;
 ---
 
 <!DOCTYPE html>
@@ -21,6 +37,15 @@ const { title, description, lang = 'en', robots = 'noindex' } = Astro.props;
   <title>{title}</title>
   <meta name="description" content={description}>
   <meta name="robots" content={robots}>
+  <link rel="canonical" href={canonicalUrl}>
+  {cleanedAlternates.map((link) => (
+    <link rel="alternate" hreflang={link.hrefLang} href={absoluteUrl(link.href, Astro.url)} />
+  ))}
+  {xDefaultPath ? <link rel="alternate" hreflang="x-default" href={absoluteUrl(xDefaultPath, Astro.url)} /> : null}
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  <meta property="og:type" content="website">
+  <meta property="og:url" content={canonicalUrl}>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;1,400&family=DM+Sans:wght@400;500;600&display=optional" rel="stylesheet">

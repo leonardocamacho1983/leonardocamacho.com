@@ -5,7 +5,7 @@ import FlowLayout from "@/layouts/FlowLayout.astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { getHomePage, getPosts, getSiteSettings } from "@/lib/sanity/api";
 import { urlFor } from "@/lib/sanity/image";
-import { formatMonthYear } from "@/lib/format";
+import { formatMonthYear, mapHtmlLang } from "@/lib/format";
 import { categoryLabel, categoryToneClass } from "@/lib/category-style";
 import { LOCALES, localizedPath } from "@/lib/locales";
 import { getLocaleOrDefault, isPreviewRequest, localeLinksForPath } from "@/lib/page-helpers";
@@ -42,6 +42,10 @@ const welcomePath = WELCOME_PATH[locale] || '/welcome';
 const [headlineLine1, headlineLine2 = ''] = nc.headline.split('\n');
 const currentLocaleMeta = LOCALES.find((item) => item.key === locale) || LOCALES[0];
 const launchRevealDelayMs = Number(import.meta.env.PUBLIC_LAUNCH_REVEAL_DELAY_MS || 1400);
+const launchAlternates = LOCALES.map((item) => ({
+  hrefLang: mapHtmlLang(item.key),
+  href: `/${item.key}`,
+}));
 
 // --- Shared ---
 const pathname = new URL(Astro.request.url).pathname;
@@ -95,6 +99,9 @@ const aboutHeadlineSuffix = aboutHeadlineMatch
     description={nc.supportingNote}
     lang={nc.lang}
     robots="index,follow"
+    canonicalPath={`/${locale}`}
+    alternateLinks={launchAlternates}
+    xDefaultHref="/en-us"
   >
     <div class="launch-page">
       <EditorialIllustration />

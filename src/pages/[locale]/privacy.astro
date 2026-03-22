@@ -4,6 +4,7 @@ export const prerender = false;
 import FlowLayout from "@/layouts/FlowLayout.astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import EditorialIllustration from "@/components/launch/EditorialIllustration.astro";
+import { mapHtmlLang } from "@/lib/format";
 import { LOCALES, localizedPath } from "@/lib/locales";
 import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
 import { getSiteSettings } from "@/lib/sanity/api";
@@ -177,6 +178,10 @@ const localeLinks = LOCALES.map((item) => ({
   href: localizedPath(item.key, "privacy"),
   available: true,
 }));
+const privacyAlternates = LOCALES.map((item) => ({
+  hrefLang: mapHtmlLang(item.key),
+  href: localizedPath(item.key, "privacy"),
+}));
 ---
 
 {isLaunchMode ? (
@@ -185,6 +190,9 @@ const localeLinks = LOCALES.map((item) => ({
     description={copy.intro}
     lang={copy.lang}
     robots="index,follow"
+    canonicalPath={`/${locale}/privacy`}
+    alternateLinks={privacyAlternates}
+    xDefaultHref="/en-us/privacy"
   >
     <div class="launch-privacy-page">
       <EditorialIllustration />

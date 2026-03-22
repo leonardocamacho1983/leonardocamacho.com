@@ -7,8 +7,9 @@ import { formatMonthYear, formatReadTime } from "@/lib/format";
 import { categoryLabel, categoryToneClass } from "@/lib/category-style";
 import { localizedPath, type LocaleKey } from "@/lib/locales";
 import { getLocaleOrDefault, isPreviewRequest, localeLinksForPath } from "@/lib/page-helpers";
-import { getPostBySlug, getSiteSettings } from "@/lib/sanity/api";
+import { getPostBySlug, getPosts, getSiteSettings } from "@/lib/sanity/api";
 import { urlFor } from "@/lib/sanity/image";
+import { absoluteUrl } from "@/lib/seo";
 
 const rawLocale = Astro.params.locale;
 const locale = getLocaleOrDefault(rawLocale);
@@ -18,9 +19,10 @@ if (!rawLocale || rawLocale.toLowerCase() !== locale) {
 }
 
 const isPreview = isPreviewRequest(Astro.cookies);
-const [settings, post] = await Promise.all([
+const [settings, post, posts] = await Promise.all([
   getSiteSettings(locale, isPreview),
   getPostBySlug(locale, slug, isPreview),
+  getPosts(locale, isPreview),
 ]);
 
 if (!post) {
@@ -39,6 +41,28 @@ const heroImage = post.coverImage
 
 const seoTitle = post.seoTitle || `${post.title} ${post.titleEmphasis || ""} | ${settings.siteTitle}`;
 const seoDescription = post.seoDescription || post.excerpt;
+const relatedPosts = posts
+  .filter((candidate) => candidate.slug !== post.slug)
+  .filter((candidate) => candidate.category?.slug === post.category?.slug)
+  .slice(0, 3);
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: `${post.title}${post.titleEmphasis ? ` ${post.titleEmphasis}` : ""}`.trim(),
+  description: seoDescription,
+  inLanguage: locale,
+  datePublished: post.publishedAt,
+  dateModified: post.publishedAt,
+  author: {
+    "@type": "Person",
+    name: settings.siteTitle,
+  },
+  image: heroImage,
+  mainEntityOfPage: {
+    "@type": "WebPage",
+    "@id": absoluteUrl(localizedPath(locale, "post", post.slug), Astro.url),
+  },
+};
 ---
 
 <BaseLayout
@@ -49,6 +73,7 @@ const seoDescription = post.seoDescription || post.excerpt;
   description={seoDescription}
   canonicalPath={`/${locale}/writing/${post.slug}`}
   isPreview={isPreview}
+  structuredData={articleSchema}
 >
   <section class="sec-featured">
     <div class="container post-detail">
@@ -73,7 +98,56 @@ const seoDescription = post.seoDescription || post.excerpt;
         <div class="post-detail__content">
           <PortableText value={post.body as never} />
         </div>
+
+        {relatedPosts.length > 0 ? (
+          <aside class="post-related">
+            <h2 class="post-related__title">Related essays</h2>
+            <ul class="post-related__list">
+              {relatedPosts.map((related) => (
+                <li>
+                  <a href={localizedPath(locale, "post", related.slug)}>
+                    {related.title} {related.titleEmphasis ? <em>{related.titleEmphasis}</em> : null}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        ) : null}
       </article>
     </div>
   </section>
+
+  <style>
+    .post-related {
+      margin-top: 56px;
+      border-top: 1px solid var(--color-line);
+      padding-top: 28px;
+    }
+
+    .post-related__title {
+      font-size: clamp(20px, 3vw, 28px);
+      margin-bottom: 14px;
+    }
+
+    .post-related__list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .post-related__list a {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      border-bottom: 1px solid transparent;
+      transition: border-color 180ms ease;
+    }
+
+    .post-related__list a:hover,
+    .post-related__list a:focus-visible {
+      border-color: var(--color-text);
+    }
+  </style>
 </BaseLayout>

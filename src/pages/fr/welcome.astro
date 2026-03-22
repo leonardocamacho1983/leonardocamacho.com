@@ -5,12 +5,28 @@ import { copy } from '../../data/newsletter-copy';
 
 const c = copy['fr'];
 const subscriberId = Astro.url.searchParams.get('ck_subscriber_id')?.trim() || '';
+const hasSubscriberId = Boolean(subscriberId);
 const confirmedPath = subscriberId
   ? `/fr/confirmed?ck_subscriber_id=${encodeURIComponent(subscriberId)}`
   : '/fr/confirmed';
+const welcomeAlternates = [
+  { hrefLang: "en-US", href: "/welcome" },
+  { hrefLang: "en-GB", href: "/welcome" },
+  { hrefLang: "pt-BR", href: "/pt-br/welcome" },
+  { hrefLang: "pt-PT", href: "/pt/welcome" },
+  { hrefLang: "fr-FR", href: "/fr/welcome" },
+];
 ---
 
-<FlowLayout title="Vous êtes inscrit — Leonardo Camacho" description="Confirmez votre email pour garantir votre place." lang={c.lang} robots="index,follow">
+<FlowLayout
+  title="Vous êtes inscrit — Leonardo Camacho"
+  description="Confirmez votre email pour garantir votre place."
+  lang={c.lang}
+  robots={hasSubscriberId ? "noindex,follow" : "index,follow"}
+  canonicalPath="/fr/welcome"
+  alternateLinks={welcomeAlternates}
+  xDefaultHref="/welcome"
+>
   <main class="flow-container">
     <div class="flow-seed" aria-hidden="true">
       <svg viewBox="0 0 360 360" fill="none">
