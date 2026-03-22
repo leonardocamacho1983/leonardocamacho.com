@@ -21,8 +21,12 @@ Security:
 
 Current action:
 
-- Logs sanitized event metadata (`operation`, `dataset`, `_id`, `_type`, `slug`)
-- Returns a JSON acknowledgement
+- Runs an automated SEO infra audit (MVP) for impacted routes
+  - Scope: status, canonical, robots, sitemap consistency
+  - Out of scope: editorial/content quality checks
+- Emits alerts only for `P0` and `P1` findings (optional webhook)
+- Logs sanitized event metadata (`operation`, `dataset`, `_id`, `_type`, `slug`) and audit summary
+- Returns a JSON acknowledgement with `seoAudit` summary
 
 ## 2) Environment variables
 
@@ -30,6 +34,7 @@ Set in local `.env` and in Vercel Production:
 
 - `SANITY_WEBHOOK_BEARER_TOKEN`
 - `SANITY_WEBHOOK_ALLOWED_DATASETS` (comma-separated, default `production`)
+- `SEO_AUDIT_ALERT_WEBHOOK_URL` (optional; receives only P0/P1 alerts)
 
 Recommended token generation:
 

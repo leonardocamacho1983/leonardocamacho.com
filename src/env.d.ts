@@ -15,6 +15,7 @@ interface ImportMetaEnv {
   readonly SANITY_PREVIEW_SECRET?: string;
   readonly SANITY_WEBHOOK_BEARER_TOKEN?: string;
   readonly SANITY_WEBHOOK_ALLOWED_DATASETS?: string;
+  readonly SEO_AUDIT_ALERT_WEBHOOK_URL?: string;
   readonly KIT_API_KEY?: string;
   readonly KIT_API_BASE_URL?: string;
   readonly KIT_FORM_ID?: string;

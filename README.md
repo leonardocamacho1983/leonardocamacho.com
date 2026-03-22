@@ -111,6 +111,7 @@ Set the same environment variables in Vercel before deployment.
 
 - Incoming webhook endpoint: `POST /api/sanity/webhook`
 - Health check: `GET /api/sanity/webhook`
+- SEO infra audit (MVP) is executed from webhook events, with alerting restricted to `P0/P1`
 - Setup + workflow runbook:
   [guidelines/sanity-webhooks-and-releases.md](./guidelines/sanity-webhooks-and-releases.md)
 
