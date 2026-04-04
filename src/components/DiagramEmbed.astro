@@ -1,0 +1,83 @@
+---
+interface Props {
+  svg: string;
+  label: string;
+  caption: string;
+  accessibleText?: string;
+}
+
+const { svg, label, caption, accessibleText } = Astro.props;
+const uid = Math.random().toString(36).slice(2, 8);
+const processedSvg = svg
+  .replace(/\bid="([^"]+)"/g, `id="${uid}-$1"`)
+  .replace(/url\(#([^)]+)\)/g, `url(#${uid}-$1)`);
+const escapedAccessibleText = accessibleText?.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+const processed = escapedAccessibleText
+  ? (/\baria-label="[^"]*"/.test(processedSvg)
+      ? processedSvg.replace(/\baria-label="[^"]*"/, `aria-label="${escapedAccessibleText}"`)
+      : processedSvg.replace("<svg ", `<svg aria-label="${escapedAccessibleText}" `))
+  : processedSvg;
+---
+
+<figure class="diagram-embed flagship-diagram">
+  <div class="diagram-card flagship-diagram__frame" set:html={processed} />
+
+  <figcaption class="diagram-caption flagship-diagram__caption">
+    <span class="diagram-label flagship-diagram__label">{label}</span>
+    <span class="diagram-rule" aria-hidden="true">—</span>
+    <span class="diagram-description">{caption}</span>
+  </figcaption>
+</figure>
+
+<style>
+  .diagram-embed {
+    margin: 0;
+  }
+
+  .diagram-card {
+    background-color: #F6F3EC;
+    border: 1px solid #C6C1B2;
+    border-radius: 2px;
+    padding: clamp(24px, 3.5vw, 44px) clamp(20px, 3vw, 40px);
+    overflow: hidden;
+  }
+
+  .diagram-card :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .diagram-caption {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 12px;
+    padding-left: 2px;
+  }
+
+  .diagram-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #6E2535;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .diagram-rule {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    color: #C6C1B2;
+    flex-shrink: 0;
+  }
+
+  .diagram-description {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    line-height: 1.58;
+    color: #5C5849;
+    font-style: italic;
+  }
+</style>

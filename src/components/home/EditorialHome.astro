@@ -1,0 +1,275 @@
+---
+import SignupScripts from "@/components/newsletter/SignupScripts.astro";
+import heroBannerAsset from "@/assets/048ace4054b2f01d8084592b379bf586ce2ee426.png";
+import { categoryLabel, categoryToneClass } from "@/lib/category-style";
+import { formatMonthYear, mapHtmlLang } from "@/lib/format";
+import { localizedPath, type LocaleKey } from "@/lib/locales";
+import { localeLinksForPath } from "@/lib/page-helpers";
+import { getHomePage, getPosts, getSiteSettings } from "@/lib/sanity/api";
+import { urlFor } from "@/lib/sanity/image";
+import { absoluteUrl } from "@/lib/seo";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+interface Props {
+  locale: LocaleKey;
+  isPreview: boolean;
+  pathname: string;
+}
+
+const { locale, isPreview, pathname } = Astro.props;
+
+const [settings, home, posts] = await Promise.all([
+  getSiteSettings(locale, isPreview),
+  getHomePage(locale, isPreview),
+  getPosts(locale, isPreview),
+]);
+
+const localeLinks = localeLinksForPath(pathname, locale);
+const privacyUrl = localizedPath(locale, "privacy");
+const mainPost = home.featuredMainPost || posts[0] || null;
+const insightPost = home.featuredInsightPost || posts[1] || null;
+const recentPosts = home.featuredRecentPosts?.length
+  ? home.featuredRecentPosts
+  : posts.filter((post) => post.id !== mainPost?.id && post.id !== insightPost?.id).slice(0, 2);
+const featuredMainExcerpt =
+  mainPost?.excerpt?.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() || mainPost?.excerpt || "";
+
+const heroImage = home.heroImage
+  ? urlFor(home.heroImage).width(1200).height(980).fit("crop").url()
+  : heroBannerAsset.src;
+const mainImage = mainPost?.coverImage
+  ? urlFor(mainPost.coverImage).width(900).height(760).fit("crop").url()
+  : "https://images.unsplash.com/photo-1612572357378-f8da682e6e3a?auto=format&fit=crop&w=900&q=80";
+const textureImage = home.stayUpdatedTexture
+  ? urlFor(home.stayUpdatedTexture).width(1400).height(600).fit("crop").url()
+  : "https://images.unsplash.com/photo-1706271952285-01b5e3fc2d78?auto=format&fit=crop&w=1400&q=80";
+
+const aboutHeadlineMatch = home.aboutHeadline?.match(/outlast their competition/i);
+const aboutHeadlinePrefix = aboutHeadlineMatch
+  ? home.aboutHeadline.slice(0, aboutHeadlineMatch.index)
+  : home.aboutHeadline || "";
+const aboutHeadlineEmphasis = aboutHeadlineMatch ? aboutHeadlineMatch[0] : "";
+const aboutHeadlineSuffix = aboutHeadlineMatch
+  ? home.aboutHeadline.slice((aboutHeadlineMatch.index || 0) + aboutHeadlineMatch[0].length)
+  : "";
+const canonicalPath = `/${locale}`;
+const canonicalUrl = absoluteUrl(canonicalPath, Astro.url, Astro.request.headers);
+const schemaFeedPosts = [mainPost, insightPost, ...recentPosts]
+  .filter((post, index, items): post is NonNullable<typeof post> =>
+    Boolean(post && items.findIndex((item) => item?.id === post.id) === index),
+  )
+  .slice(0, 6);
+const homeStructuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${canonicalUrl}#home`,
+    url: canonicalUrl,
+    name: `${settings.siteTitle} | ${home.heroTitle} ${home.heroTitleEmphasis}`,
+    description: home.heroDescription,
+    inLanguage: mapHtmlLang(locale),
+    about: {
+      "@type": "Person",
+      name: settings.siteTitle,
+      url: canonicalUrl,
+    },
+  },
+  ...(schemaFeedPosts.length > 0
+    ? [
+        {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          itemListOrder: "https://schema.org/ItemListOrderDescending",
+          numberOfItems: schemaFeedPosts.length,
+          itemListElement: schemaFeedPosts.map((post, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            url: absoluteUrl(localizedPath(locale, "post", post.slug), Astro.url, Astro.request.headers),
+            name: `${post.title}${post.titleEmphasis ? ` ${post.titleEmphasis}` : ""}`.trim(),
+          })),
+        },
+      ]
+    : []),
+];
+---
+
+<BaseLayout
+  locale={locale}
+  settings={settings}
+  localeLinks={localeLinks}
+  title={`${settings.siteTitle} | ${home.heroTitle} ${home.heroTitleEmphasis}`}
+  description={home.heroDescription}
+  canonicalPath={canonicalPath}
+  isPreview={isPreview}
+  structuredData={homeStructuredData}
+>
+  <section class="sec-hero">
+    <div class="container">
+      <article class="hero hero--print1 hero-entrance">
+        <div class="hero__content pad-hero-card">
+          <div class="eyebrow-row hero__eyebrow">
+            <span class="eyebrow-line hero__eyebrow-line"></span>
+            <span class="eyebrow-label hero__eyebrow-label">{home.heroKicker}</span>
+          </div>
+          <h2 class="hero__title">
+            {home.heroTitle}
+            <br />
+            <em>{home.heroTitleEmphasis}</em>
+          </h2>
+          <p class="hero__description">{home.heroDescription}</p>
+          <a
+            class="link-arrow arrow-link hero__cta"
+            href={home.heroCtaPost?.slug ? localizedPath(locale, "post", home.heroCtaPost.slug) : localizedPath(locale, "writing")}
+          >
+            <span>{home.heroCtaLabel}</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="hero__media">
+          <img class="ken-burns-hero" src={heroImage} alt={settings.siteTitle} loading="eager" width="1200" height="980" />
+        </div>
+        <span class="hero__location hero__location--overlay">{home.heroLocationLabel || "Florianópolis, Brazil"}</span>
+      </article>
+    </div>
+  </section>
+
+  <section class="sec-header">
+    <div class="container credibility scroll-reveal" data-y="24" data-delay="40">
+      <p class="credibility__label">{home.credibilityLabel}</p>
+      <div class="credibility__items">
+        {home.credibilityItems.map((item, index) => (
+          <>
+            {index > 0 ? <span class="credibility__divider"></span> : null}
+            <span>{item.name}</span>
+          </>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="sec-featured">
+    <div class="container">
+      <div class="section-line"></div>
+      <div class="section-head scroll-reveal" data-y="24" data-delay="80">
+        <h3 class="section-title">{home.featuredSectionTitle}</h3>
+        <a class="link-arrow arrow-link" href={localizedPath(locale, "writing")}>
+          <span>{home.featuredViewAllLabel}</span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
+
+      <div class="featured-grid gap-featured-main">
+        {mainPost ? (
+          <article class="card featured-main scroll-reveal" data-y="30" data-delay="120">
+            <div class="featured-main__text pad-featured-card">
+              <span class={`tag ${categoryToneClass(mainPost.category?.slug)}`}>{categoryLabel(mainPost.category)}</span>
+              <h4 class="post-title">
+                {mainPost.title}
+                {mainPost.titleEmphasis ? <><br /><em>{mainPost.titleEmphasis}</em></> : null}
+              </h4>
+              <p class="post-excerpt">{featuredMainExcerpt}</p>
+              <div class="featured-main__cta">
+                <a class="link-arrow arrow-link" href={localizedPath(locale, "post", mainPost.slug)}>
+                  <span>Read Essay</span>
+                  <span class="arrow" aria-hidden="true">→</span>
+                </a>
+              </div>
+            </div>
+            <a class="featured-main__media" href={localizedPath(locale, "post", mainPost.slug)}>
+              <img src={mainImage} alt={mainPost.title} width="900" height="760" />
+            </a>
+          </article>
+        ) : null}
+
+        <div class="featured-side">
+          {insightPost ? (
+            <article class="card pad-featured-card featured-side__insight scroll-reveal" data-y="30" data-delay="180">
+              <span class={`tag ${categoryToneClass(insightPost.category?.slug)}`}>{categoryLabel(insightPost.category)}</span>
+              <div class="featured-side__insight-head">
+                <h4 class="post-title">
+                  {insightPost.title}
+                  {insightPost.titleEmphasis ? <><br /><em>{insightPost.titleEmphasis}</em></> : null}
+                </h4>
+                <span class="featured-side__insight-date">{formatMonthYear(insightPost.publishedAt, locale)}</span>
+              </div>
+              <span class="featured-side__insight-meta">{formatMonthYear(insightPost.publishedAt, locale)}</span>
+            </article>
+          ) : null}
+
+          <article class="card pad-featured-card featured-side__recent scroll-reveal" data-y="30" data-delay="220">
+            <span class="eyebrow-label eyebrow-label--accent">{home.featuredRecentPostsLabel}</span>
+            <ul class="featured-list">
+              {recentPosts.map((post) => (
+                <li>
+                  <a href={localizedPath(locale, "post", post.slug)} class="post-title featured-list__link">
+                    {post.title} {post.titleEmphasis ? <em>{post.titleEmphasis}</em> : null}
+                  </a>
+                  <span class="featured-list__date">{formatMonthYear(post.publishedAt, locale)}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec-about-teaser">
+    <div class="container">
+      <article class="about-teaser scroll-reveal" data-y="28" data-delay="80">
+        <div class="accent-column" aria-hidden="true">
+          <span class="accent-column__line"></span>
+          <span class="accent-column__dot"></span>
+        </div>
+        <div>
+          <div class="eyebrow-row">
+            <span class="eyebrow-label eyebrow-label--accent">{home.aboutKicker}</span>
+          </div>
+          <p class="about-teaser__headline">
+            {aboutHeadlineMatch ? (
+              <>
+                {aboutHeadlinePrefix}
+                <em>{aboutHeadlineEmphasis}</em>
+                {aboutHeadlineSuffix}
+              </>
+            ) : (
+              home.aboutHeadline
+            )}
+          </p>
+          <p class="about-teaser__body">{home.aboutBody}</p>
+          <a class="link-arrow arrow-link" href={localizedPath(locale, "about")}>
+            <span>{home.aboutCtaLabel}</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </article>
+      <div class="section-line"></div>
+    </div>
+  </section>
+
+  <section class="sec-stay-updated">
+    <div class="container">
+      <article class="newsletter scroll-reveal" data-y="28" data-delay="100">
+        <img class="newsletter__texture" src={textureImage} alt="" aria-hidden="true" width="1400" height="600" />
+        <div class="newsletter__overlay"></div>
+        <div class="newsletter__content pad-stay-updated-inner">
+          <h3 class="newsletter__title">{home.stayUpdatedTitle}</h3>
+          <p class="newsletter__copy">{home.stayUpdatedDescription}</p>
+          <form class="newsletter__form" id="signupForm" method="POST" action="/api/newsletter/subscribe">
+            <input type="hidden" name="locale" value={locale} />
+            <input type="hidden" name="source" value="home" />
+            <input type="hidden" name="path" value={pathname} />
+            <input class="newsletter__input" type="email" name="email" required placeholder={home.stayUpdatedPlaceholder} />
+            <button class="newsletter__submit" type="submit">{home.stayUpdatedButtonLabel}</button>
+          </form>
+          <p class="newsletter__consent-note">
+            By subscribing I agree to receive the newsletter and accept the{" "}
+            <a href={privacyUrl}>privacy policy</a>.
+          </p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <SignupScripts />
+</BaseLayout>

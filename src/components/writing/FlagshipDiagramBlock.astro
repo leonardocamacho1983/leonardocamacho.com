@@ -1,0 +1,39 @@
+---
+import type { Props as PortableProps } from "astro-portabletext/types";
+import DiagramEmbed from "@/components/DiagramEmbed.astro";
+import { diagrams, type DiagramKey } from "@/diagrams";
+
+interface DiagramNode {
+  _type: "diagramEmbed";
+  diagramKey?: string;
+  label: string;
+  caption: string;
+  accessibleText?: string;
+  svgCode?: string;
+  isPlaceholder?: boolean;
+}
+
+interface Props extends PortableProps<DiagramNode> {}
+
+const { node } = Astro.props;
+const svg =
+  (typeof node.svgCode === "string" && node.svgCode.trim().length > 0 ? node.svgCode : undefined) ||
+  (node.diagramKey ? diagrams[node.diagramKey as DiagramKey] : undefined);
+---
+
+{svg ? (
+  <DiagramEmbed svg={svg} label={node.label} caption={node.caption} accessibleText={node.accessibleText} />
+) : (
+  <figure class="flagship-diagram">
+    <div class:list={["flagship-diagram__frame", "flagship-diagram__frame--placeholder"]}>
+      <div class="flagship-diagram__placeholder">
+        <span>{node.label}</span>
+        <strong>SVG reserved for upcoming insertion</strong>
+      </div>
+    </div>
+    <figcaption class="flagship-diagram__caption">
+      <span class="flagship-diagram__label">{node.label}</span>
+      <span>{node.caption}</span>
+    </figcaption>
+  </figure>
+)}

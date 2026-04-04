@@ -1,0 +1,406 @@
+---
+export const prerender = false;
+
+import LanguageSwitcher from "@/components/launch/LanguageSwitcher.astro";
+import { copy as legacyNewsletterCopy } from "@/data/newsletter-copy";
+import FlowLayout from "@/layouts/FlowLayout.astro";
+import { mapHtmlLang } from "@/lib/format";
+import { getNewsletterCopy } from "@/lib/i18n/newsletter";
+import { getLaunchPosts } from "@/lib/launch-posts";
+import { LOCALES } from "@/lib/locales";
+import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
+import { getPosts, getSiteSettings } from "@/lib/sanity/api";
+
+const rawLocale = Astro.params.locale;
+const locale = getLocaleOrDefault(rawLocale);
+if (!rawLocale || rawLocale.toLowerCase() !== locale) {
+  return Astro.redirect("/en-us/launch/thanks", 302);
+}
+
+const isPreview = isPreviewRequest(Astro.cookies);
+const [settings, posts] = await Promise.all([getSiteSettings(locale, isPreview), getPosts(locale, isPreview)]);
+
+const launchPosts = getLaunchPosts(posts);
+const featured = launchPosts[0] || null;
+const localeOptions = LOCALES.map((item) => ({ key: item.key, label: item.label, flag: item.flag }));
+const launchAlternates = LOCALES.map((item) => ({
+  hrefLang: mapHtmlLang(item.key),
+  href: `/${item.key}/launch/thanks`,
+}));
+
+const url = new URL(Astro.request.url);
+const rawStatus = url.searchParams.get("status") || "";
+const status = rawStatus || "subscribed";
+const state = url.searchParams.get("state") || "";
+const querySuffix = `${status ? `?status=${encodeURIComponent(status)}` : ""}${state ? `${status ? "&" : "?"}state=${encodeURIComponent(state)}` : ""}`;
+const localeLinkSuffix = `/thanks${querySuffix}`;
+
+const legacyCopyKey =
+  locale === "pt-br" ? "pt-br" : locale === "pt-pt" ? "pt" : locale === "fr-fr" ? "fr" : "en";
+const legacyCopy = legacyNewsletterCopy[legacyCopyKey];
+const newsletterCopy = getNewsletterCopy(locale);
+const errorTitleByLocale = {
+  "en-us": "Try Again.",
+  "en-gb": "Try Again.",
+  "pt-br": "Tente Novamente.",
+  "pt-pt": "Tente Novamente.",
+  "fr-fr": "Réessayez.",
+} as const;
+const copy = {
+  title: legacyCopy.welcomeHero,
+  description: legacyCopy.welcomeInstruction,
+  subject: legacyCopy.welcomeSubjectLine,
+  subjectLabel: legacyCopy.welcomeSubjectLabel,
+  stepsTitle: newsletterCopy.confirmChecklistTitle,
+  stepOne: newsletterCopy.confirmStepOne,
+  stepTwo: newsletterCopy.confirmStepTwo,
+  stepThree: newsletterCopy.confirmStepThree,
+  gmail: legacyCopy.welcomeOpenGmail,
+  outlook: legacyCopy.welcomeOpenOutlook,
+  archive:
+    locale === "en-us" || locale === "en-gb"
+      ? "Read the latest essay"
+      : locale === "fr-fr"
+        ? "Lire le dernier essai"
+        : "Ler o ensaio mais recente",
+  home:
+    locale === "en-us" || locale === "en-gb"
+      ? "Back to launch home"
+      : locale === "fr-fr"
+        ? "Retour à la home de lancement"
+        : locale === "pt-pt"
+          ? "Voltar à home de lançamento"
+          : "Voltar para a home de lançamento",
+  errorTitle: errorTitleByLocale[locale] || errorTitleByLocale["en-us"],
+  invalidEmail: newsletterCopy.subscribeErrorLabel,
+  serviceUnavailable: newsletterCopy.subscribeErrorLabel,
+  rateLimited: newsletterCopy.subscribeErrorLabel,
+  subscribeError: newsletterCopy.subscribeErrorLabel,
+  note: newsletterCopy.unsubscribeNote,
+} as const;
+const confirmationSubject = copy.subject;
+const latestEssayPath = featured ? `/${locale}/launch/archive/${featured.slug}` : `/${locale}/launch/archive`;
+const homePath = `/${locale}/launch`;
+const description = status === "subscribed" ? copy.description : copy[status.replace(/-([a-z])/g, (_, chr) => chr.toUpperCase()) as keyof typeof copy] || copy.subscribeError;
+const pageTitle = status === "subscribed" ? `${copy.title} — ${settings.siteTitle}` : `${copy.errorTitle} — ${settings.siteTitle}`;
+---
+
+<FlowLayout
+  title={pageTitle}
+  description={description}
+  lang={mapHtmlLang(locale)}
+  locale={locale}
+  robots="noindex,follow"
+  canonicalPath={`/${locale}/launch/thanks`}
+  alternateLinks={launchAlternates}
+  xDefaultHref="/en-us/launch/thanks"
+>
+  <div class="launch-global-lang">
+    <LanguageSwitcher
+      locale={locale}
+      localeOptions={localeOptions}
+      localeLinkSuffix={localeLinkSuffix}
+      tone="light"
+    />
+  </div>
+
+  <main class="launch-thanks">
+    <section class="launch-thanks__shell">
+      <div class="launch-thanks__byline">
+        <span></span>
+        <p>{settings.siteTitle.toLowerCase()}</p>
+        <span></span>
+      </div>
+
+      <div class="launch-thanks__hero">
+        <div class="launch-thanks__intro">
+          <h1 class="launch-thanks__title">{status === "subscribed" ? copy.title : copy.errorTitle}</h1>
+          <p class="launch-thanks__description">{description}</p>
+        </div>
+
+        {status === "subscribed" ? (
+          <div class="launch-thanks__utility">
+            <div class="launch-thanks__card">
+              <p>{copy.subjectLabel}</p>
+              <strong>{confirmationSubject}</strong>
+            </div>
+
+            <div class="launch-thanks__card">
+              <p>{copy.stepsTitle}</p>
+              <ol>
+                <li>{copy.stepOne}</li>
+                <li>{copy.stepTwo}</li>
+                <li>{copy.stepThree}</li>
+              </ol>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {status === "subscribed" ? (
+        <div class="launch-thanks__actions">
+          <a href="https://mail.google.com/mail/u/0/#inbox" target="_blank" rel="noreferrer">{copy.gmail}</a>
+          <a href="https://outlook.live.com/mail/0/inbox" target="_blank" rel="noreferrer">{copy.outlook}</a>
+        </div>
+      ) : null}
+
+      <div class="launch-thanks__footer">
+        <p class="launch-thanks__note">{copy.note}</p>
+
+        <div class="launch-thanks__links">
+          <a class="launch-thanks__primary" href={latestEssayPath}><span>{copy.archive}</span></a>
+          <a class="launch-thanks__secondary" href={homePath}>{copy.home}</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <style>
+    .launch-global-lang {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 12px);
+      right: calc(env(safe-area-inset-right, 0px) + 12px);
+      z-index: 90;
+    }
+
+    .launch-thanks {
+      min-height: 100vh;
+      min-height: 100svh;
+      background:
+        radial-gradient(circle at top left, rgba(110, 37, 53, 0.05), transparent 34%),
+        linear-gradient(180deg, #f6f3ec 0%, #f2eee7 100%);
+      padding: 64px 24px 80px;
+    }
+
+    .launch-thanks__shell {
+      width: min(980px, 100%);
+      margin: 0 auto;
+    }
+
+    .launch-thanks__byline {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 34px;
+    }
+
+    .launch-thanks__byline span {
+      width: 44px;
+      height: 1px;
+      background: #d8d2c8;
+    }
+
+    .launch-thanks__byline p,
+    .launch-thanks__eyebrow,
+    .launch-thanks__card p {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #6a655d;
+    }
+
+    .launch-thanks__hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+      gap: 44px;
+      align-items: start;
+      padding: clamp(28px, 5vw, 54px);
+      border: 1px solid rgba(216, 210, 200, 0.9);
+      background: rgba(246, 243, 236, 0.82);
+      backdrop-filter: blur(4px);
+    }
+
+    .launch-thanks__intro {
+      max-width: 620px;
+    }
+
+    .launch-thanks__title {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(42px, 6.4vw, 82px);
+      line-height: 0.93;
+      letter-spacing: -0.028em;
+      color: #1a1710;
+      margin: 0 0 18px;
+    }
+
+    .launch-thanks__description,
+    .launch-thanks__card strong,
+    .launch-thanks__card ol,
+    .launch-thanks__note,
+    .launch-thanks__links a {
+      font-family: "Spectral", Georgia, serif;
+      color: #4a4740;
+    }
+
+    .launch-thanks__description {
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.68;
+      margin: 0;
+      color: #433f38;
+    }
+
+    .launch-thanks__utility {
+      display: grid;
+      gap: 16px;
+    }
+
+    .launch-thanks__card {
+      padding: 20px 22px;
+      border: 1px solid #d8d2c8;
+      background: rgba(247, 243, 238, 0.62);
+    }
+
+    .launch-thanks__card strong {
+      display: block;
+      margin-top: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #1a1710;
+    }
+
+    .launch-thanks__card ol {
+      margin: 12px 0 0 20px;
+      padding: 0;
+      display: grid;
+      gap: 10px;
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    .launch-thanks__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .launch-thanks__actions a,
+    .launch-thanks__primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 54px;
+      padding: 0 28px;
+      text-decoration: none;
+      background: #6e2535;
+      color: #fffaf3;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid #6e2535;
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .launch-thanks__primary {
+      min-width: 332px;
+    }
+
+    .launch-thanks__primary span {
+      color: #fffaf3 !important;
+      -webkit-text-fill-color: #fffaf3 !important;
+      text-shadow: 0 0 0 rgba(0, 0, 0, 0.01);
+    }
+
+    .launch-thanks__actions a:hover,
+    .launch-thanks__primary:hover {
+      background: #8a2d42;
+      border-color: #8a2d42;
+      color: #fffaf3;
+    }
+
+    .launch-thanks__actions a:visited,
+    .launch-thanks__primary:visited {
+      color: #fffaf3;
+    }
+
+    .launch-thanks__primary:visited span,
+    .launch-thanks__primary:hover span {
+      color: #fffaf3 !important;
+      -webkit-text-fill-color: #fffaf3 !important;
+    }
+
+    .launch-thanks__footer {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-top: 26px;
+      padding: 0 4px;
+    }
+
+    .launch-thanks__note {
+      font-size: 14px;
+      line-height: 1.65;
+      color: #625d56;
+      max-width: 420px;
+    }
+
+    .launch-thanks__links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      margin-top: 28px;
+    }
+
+    .launch-thanks__secondary {
+      text-decoration: none;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.3;
+      border-bottom: 1px solid #bdb5aa;
+      padding-bottom: 2px;
+      color: #4f4a43;
+    }
+
+    .launch-thanks__secondary:hover {
+      color: #6e2535;
+      border-bottom-color: #6e2535;
+    }
+
+    .launch-thanks__secondary:visited {
+      color: #4f4a43;
+    }
+
+    @media (max-width: 720px) {
+      .launch-thanks {
+        padding: 20px 14px 48px;
+      }
+
+      .launch-thanks__hero {
+        grid-template-columns: 1fr;
+        gap: 18px;
+        padding: 24px 18px;
+      }
+
+      .launch-thanks__byline {
+        gap: 10px;
+      }
+
+      .launch-thanks__byline span {
+        width: 26px;
+      }
+
+      .launch-thanks__actions,
+      .launch-thanks__links {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .launch-thanks__footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .launch-thanks__actions a,
+      .launch-thanks__primary {
+        width: 100%;
+      }
+    }
+  </style>
+</FlowLayout>

@@ -1,9 +1,70 @@
 ---
-const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY || '';
-const posthogHost = import.meta.env.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+interface Props {
+  enableAutocapture?: boolean;
+  enablePageview?: boolean;
+  enablePageleave?: boolean;
+  enableSessionRecording?: boolean;
+  sessionRecordingSampleRate?: number;
+  enableSurveys?: boolean;
+}
+
+const {
+  enableAutocapture,
+  enablePageview,
+  enablePageleave,
+  enableSessionRecording,
+  sessionRecordingSampleRate,
+  enableSurveys,
+} = Astro.props;
+
+const flagValue = (propValue: boolean | undefined, envValue: string | undefined, fallback: string) =>
+  typeof propValue === "boolean" ? String(propValue) : envValue || fallback;
+
+const numberValue = (
+  propValue: number | undefined,
+  envValue: string | undefined,
+  fallback: string,
+) => (typeof propValue === "number" ? String(propValue) : envValue || fallback);
+
+const posthogKey = import.meta.env.PUBLIC_POSTHOG_KEY || "";
+const posthogHost = import.meta.env.PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
+const posthogAutocapture = flagValue(
+  enableAutocapture,
+  import.meta.env.PUBLIC_POSTHOG_ENABLE_AUTOCAPTURE,
+  "true",
+);
+const posthogPageview = flagValue(enablePageview, import.meta.env.PUBLIC_POSTHOG_ENABLE_PAGEVIEW, "true");
+const posthogPageleave = flagValue(
+  enablePageleave,
+  import.meta.env.PUBLIC_POSTHOG_ENABLE_PAGELEAVE,
+  "true",
+);
+const posthogSessionRecording = flagValue(
+  enableSessionRecording,
+  import.meta.env.PUBLIC_POSTHOG_ENABLE_SESSION_RECORDING,
+  "true",
+);
+const posthogSessionRecordingSampleRate = numberValue(
+  sessionRecordingSampleRate,
+  import.meta.env.PUBLIC_POSTHOG_SESSION_RECORDING_SAMPLE_RATE,
+  "1",
+);
+const posthogSurveys = flagValue(enableSurveys, import.meta.env.PUBLIC_POSTHOG_ENABLE_SURVEYS, "true");
 ---
 
-<script defer src="/js/telemetry.js" data-posthog-key={posthogKey} data-posthog-host={posthogHost}></script>
+<script
+  is:inline
+  defer
+  src="/js/telemetry.js"
+  data-posthog-key={posthogKey}
+  data-posthog-host={posthogHost}
+  data-posthog-autocapture={posthogAutocapture}
+  data-posthog-pageview={posthogPageview}
+  data-posthog-pageleave={posthogPageleave}
+  data-posthog-session-recording={posthogSessionRecording}
+  data-posthog-session-recording-sample-rate={posthogSessionRecordingSampleRate}
+  data-posthog-surveys={posthogSurveys}
+></script>
 
 <style is:global>
   .lc-consent-banner {

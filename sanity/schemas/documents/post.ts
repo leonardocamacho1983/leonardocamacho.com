@@ -21,6 +21,19 @@ export const postType = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: "templateVariant",
+      title: "Template variant",
+      type: "string",
+      options: {
+        list: [
+          { title: "Standard", value: "standard" },
+          { title: "Flagship", value: "flagship" },
+        ],
+      },
+      initialValue: "standard",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
       name: "title",
       title: "Title",
       type: "string",
@@ -98,6 +111,78 @@ export const postType = defineType({
       title: "Body",
       type: "blockContent",
       validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "flagshipHeroMode",
+      title: "Flagship hero mode",
+      type: "string",
+      hidden: ({ document }) => (document as { templateVariant?: string })?.templateVariant !== "flagship",
+      options: {
+        list: [
+          { title: "Image", value: "image" },
+          { title: "Illustration", value: "illustration" },
+        ],
+      },
+      initialValue: "image",
+    }),
+    defineField({
+      name: "editorialPlan",
+      title: "Editorial plan",
+      type: "object",
+      fields: [
+        defineField({
+          name: "clusterRole",
+          title: "Cluster role",
+          type: "string",
+          options: { list: ["pillar", "support", "bridge"] },
+        }),
+        defineField({
+          name: "mustLinkTo",
+          title: "Must link to",
+          type: "array",
+          of: [{ type: "string" }],
+        }),
+        defineField({
+          name: "internalLinkPlan",
+          title: "Internal link plan",
+          type: "array",
+          of: [
+            defineField({
+              name: "item",
+              title: "Link target",
+              type: "object",
+              fields: [
+                defineField({
+                  name: "target",
+                  title: "Target",
+                  type: "string",
+                  validation: (Rule) => Rule.required(),
+                }),
+                defineField({
+                  name: "kind",
+                  title: "Kind",
+                  type: "string",
+                  options: { list: ["post", "core-page"] },
+                  validation: (Rule) => Rule.required(),
+                }),
+                defineField({
+                  name: "purpose",
+                  title: "Purpose",
+                  type: "string",
+                  options: { list: ["reinforce", "bridge", "next-step"] },
+                  validation: (Rule) => Rule.required(),
+                }),
+                defineField({
+                  name: "anchorHint",
+                  title: "Anchor hint",
+                  type: "string",
+                  validation: (Rule) => Rule.required(),
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
     }),
     defineField({
       name: "seoTitle",

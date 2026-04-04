@@ -1,0 +1,624 @@
+---
+import FlowLayout from "@/layouts/FlowLayout.astro";
+import type { LocaleKey } from "@/lib/locales";
+import { getSiteSettings } from "@/lib/sanity/api";
+import {
+  createSubscriberUpdateToken,
+  hasNewsletterStateTokenSecret,
+} from "@/lib/newsletter/state-token";
+import { mapHtmlLang } from "@/lib/format";
+import { copy } from "@/data/newsletter-copy";
+
+interface Props {
+  copyKey: "en" | "pt-br" | "pt" | "fr";
+  locale: LocaleKey;
+  canonicalPath: string;
+  homePath: string;
+}
+
+const { copyKey, locale, canonicalPath, homePath } = Astro.props;
+const c = copy[copyKey];
+const isFinalStep = Astro.url.searchParams.get("step") === "final";
+const isPreview = Astro.cookies.get("__preview")?.value === "true";
+const settings = await getSiteSettings(locale, isPreview);
+
+const subscriberId = Astro.url.searchParams.get("ck_subscriber_id")?.trim() || "";
+const updateToken =
+  subscriberId && hasNewsletterStateTokenSecret()
+    ? createSubscriberUpdateToken({ subscriberId, ttlMs: 1000 * 60 * 45 })
+    : "";
+
+const archivePath = `/${locale}/launch/archive`;
+const finalHeroByLocale = {
+  en: "Thank you for sharing a bit of your context.",
+  "pt-br": "Obrigado por falar um pouco do seu contexto.",
+  pt: "Obrigado por partilhar um pouco do seu contexto.",
+  fr: "Merci d’avoir partagé un peu de votre contexte.",
+} as const;
+const finalHeroTitle = finalHeroByLocale[copyKey];
+
+const alternateLinks = [
+  { hrefLang: "en-US", href: "/confirmed" },
+  { hrefLang: "en-GB", href: "/confirmed" },
+  { hrefLang: "pt-BR", href: "/pt-br/confirmed" },
+  { hrefLang: "pt-PT", href: "/pt/confirmed" },
+  { hrefLang: "fr-FR", href: "/fr/confirmed" },
+];
+---
+
+<FlowLayout
+  title={`${isFinalStep ? finalHeroTitle : `${c.confirmedHero1} ${c.confirmedHero2}`} — ${settings.siteTitle}`}
+  description={c.confirmedFormSubtitle}
+  lang={mapHtmlLang(locale)}
+  locale={locale}
+  robots="noindex,follow"
+  canonicalPath={canonicalPath}
+  alternateLinks={alternateLinks}
+  xDefaultHref="/confirmed"
+>
+  <main class="launch-confirmed">
+    <section class="launch-confirmed__hero">
+      <div class="launch-confirmed__byline">
+        <span></span>
+        <p>{settings.siteTitle.toLowerCase()}</p>
+        <span></span>
+      </div>
+
+      {isFinalStep ? (
+        <h1 class="launch-confirmed__title launch-confirmed__title--final">{finalHeroTitle}</h1>
+      ) : (
+        <h1 class="launch-confirmed__title launch-confirmed__title--stacked">
+          <span class="launch-confirmed__title-line launch-confirmed__title-line--accent">
+            {c.confirmedHero1}
+          </span>
+          <span class="launch-confirmed__title-line launch-confirmed__title-line--plain">
+            {c.confirmedHero2}
+          </span>
+        </h1>
+      )}
+      {!isFinalStep ? (
+        <>
+          <p class="launch-confirmed__subtitle">{c.confirmedFormSubtitle}</p>
+          <p class="launch-confirmed__note">{c.confirmedFormNote}</p>
+        </>
+      ) : null}
+    </section>
+
+    {isFinalStep ? (
+    <section class="launch-confirmed__reveal">
+      <div class="launch-confirmed__reveal-list">
+        <div class="launch-confirmed__reveal-item">
+          <p>{c.confirmedRevealPoint1}</p>
+        </div>
+        <div class="launch-confirmed__reveal-item">
+          <p>{c.confirmedRevealPoint2}</p>
+        </div>
+        <div class="launch-confirmed__reveal-item">
+          <p>{c.confirmedRevealPoint3}</p>
+        </div>
+      </div>
+      <p class="launch-confirmed__tagline">{c.confirmedRevealTagline}</p>
+
+      <div class="launch-confirmed__actions">
+        <a class="launch-confirmed__primary" href={archivePath}>
+          {copyKey === "en" ? "Go to the archive" : copyKey === "pt-br" ? "Ir para o arquivo" : copyKey === "pt" ? "Ir para o arquivo" : "Aller aux archives"}
+        </a>
+        <a class="launch-confirmed__secondary" href={homePath}>
+          {copyKey === "en" ? "Back to launch home" : copyKey === "pt-br" ? "Voltar para a home de lançamento" : copyKey === "pt" ? "Voltar à home de lançamento" : "Retour à la home de lancement"}
+        </a>
+      </div>
+    </section>
+    ) : null}
+
+    {!isFinalStep ? (
+    <section class="launch-confirmed__profile">
+      <div class="launch-confirmed__profile-head">
+        <p>{c.confirmedOptional}</p>
+        <h3>{c.confirmedFormTitle}</h3>
+      </div>
+
+      <form
+        class="launch-confirmed__form"
+        id="profileForm"
+        data-subscriber-id={subscriberId}
+        data-update-token={updateToken}
+      >
+        <div class="launch-confirmed__field">
+          <label for="name">{c.confirmedLabelName}</label>
+          <input type="text" id="name" name="name" placeholder={c.confirmedPlaceholderName} autocomplete="name" />
+        </div>
+        <div class="launch-confirmed__field-grid">
+          <div class="launch-confirmed__field">
+            <label for="position">{c.confirmedLabelPosition}</label>
+            <input type="text" id="position" name="position" placeholder={c.confirmedPlaceholderPosition} />
+          </div>
+          <div class="launch-confirmed__field">
+            <label for="company">{c.confirmedLabelCompany}</label>
+            <input type="text" id="company" name="company" placeholder={c.confirmedPlaceholderCompany} />
+          </div>
+        </div>
+        <div class="launch-confirmed__field">
+          <label for="strategic_question">
+            {c.confirmedLabelQuestion}
+            <span>{c.confirmedOptional}</span>
+          </label>
+          <textarea id="strategic_question" name="strategic_question" placeholder={c.confirmedPlaceholderQuestion} rows="4"></textarea>
+        </div>
+        <div class="launch-confirmed__form-actions">
+          <button type="submit">{c.confirmedSubmit}</button>
+          <button type="button" id="skipProfile">{c.confirmedSkip}</button>
+        </div>
+      </form>
+    </section>
+    ) : null}
+  </main>
+
+  <script>
+    const form = document.getElementById("profileForm") as HTMLFormElement | null;
+    const skip = document.getElementById("skipProfile") as HTMLButtonElement | null;
+
+    const readQuerySubscriberId = () =>
+      new URLSearchParams(window.location.search).get("ck_subscriber_id")?.trim() || "";
+
+    const readSessionSubscriberId = () => {
+      try {
+        return window.sessionStorage.getItem("ck_subscriber_id")?.trim() || "";
+      } catch {
+        return "";
+      }
+    };
+
+    const persistSessionSubscriberId = (value: string) => {
+      if (!value) return;
+      try {
+        window.sessionStorage.setItem("ck_subscriber_id", value);
+      } catch {}
+    };
+
+    const resolveSubscriberId = () => {
+      const fromDataset = form?.dataset.subscriberId?.trim() || "";
+      if (fromDataset) {
+        persistSessionSubscriberId(fromDataset);
+        return fromDataset;
+      }
+
+      const fromQuery = readQuerySubscriberId();
+      if (fromQuery) {
+        if (form) form.dataset.subscriberId = fromQuery;
+        persistSessionSubscriberId(fromQuery);
+        return fromQuery;
+      }
+
+      const fromSession = readSessionSubscriberId();
+      if (fromSession) {
+        if (form) form.dataset.subscriberId = fromSession;
+        return fromSession;
+      }
+
+      return "";
+    };
+
+    const goToFinalStep = () => {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete("ck_subscriber_id");
+      nextUrl.searchParams.set("step", "final");
+      window.location.assign(`${nextUrl.pathname}${nextUrl.search}`);
+    };
+
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const subscriberId = resolveSubscriberId();
+      const updateToken = form?.dataset.updateToken?.trim() || "";
+      const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      if (submitButton) submitButton.disabled = true;
+
+      try {
+        const fields = {
+          name: (document.getElementById("name") as HTMLInputElement | null)?.value || "",
+          position: (document.getElementById("position") as HTMLInputElement | null)?.value || "",
+          company: (document.getElementById("company") as HTMLInputElement | null)?.value || "",
+          strategic_question:
+            (document.getElementById("strategic_question") as HTMLTextAreaElement | null)?.value || "",
+        };
+
+        if (subscriberId && updateToken) {
+          await fetch("/api/update-subscriber", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              subscriber_id: subscriberId,
+              update_token: updateToken,
+              fields,
+            }),
+          });
+        }
+      } catch {
+        console.warn("Profile details were not persisted in this session.");
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
+
+      goToFinalStep();
+    });
+
+    skip?.addEventListener("click", () => {
+      goToFinalStep();
+    });
+  </script>
+
+  <style>
+    .launch-confirmed {
+      min-height: 100vh;
+      min-height: 100svh;
+      background:
+        radial-gradient(circle at top left, rgba(110, 37, 53, 0.05), transparent 34%),
+        linear-gradient(180deg, #f6f3ec 0%, #f3eee7 100%);
+      padding: 56px 24px 96px;
+    }
+
+    .launch-confirmed__hero,
+    .launch-confirmed__reveal,
+    .launch-confirmed__profile {
+      width: min(760px, 100%);
+      margin: 0 auto;
+    }
+
+    .launch-confirmed__hero {
+      text-align: center;
+      padding-top: 16px;
+    }
+
+    .launch-confirmed__byline {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .launch-confirmed__byline span {
+      width: 44px;
+      height: 1px;
+      background: #d8d2c8;
+    }
+
+    .launch-confirmed__byline p,
+    .launch-confirmed__eyebrow,
+    .launch-confirmed__profile-head p,
+    .launch-confirmed__field label {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #615c55;
+    }
+
+    .launch-confirmed__eyebrow {
+      margin-bottom: 18px;
+    }
+
+    .launch-confirmed__title {
+      margin: 0;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(42px, 7vw, 88px);
+      line-height: 0.96;
+      letter-spacing: -0.03em;
+      color: #1a1710;
+    }
+
+    .launch-confirmed__title--final {
+      max-width: 760px;
+      margin: 0 auto;
+      font-size: clamp(40px, 6vw, 72px);
+      line-height: 1.03;
+      letter-spacing: -0.025em;
+    }
+
+    .launch-confirmed__title--stacked {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 34px;
+    }
+
+    .launch-confirmed__title-line {
+      display: block;
+    }
+
+    .launch-confirmed__title-line--accent {
+      color: #b5453a;
+    }
+
+    .launch-confirmed__title-line--plain {
+      color: #1a1710;
+    }
+
+    .launch-confirmed__season,
+    .launch-confirmed__subtitle,
+    .launch-confirmed__note,
+    .launch-confirmed__reveal-item p,
+    .launch-confirmed__tagline {
+      font-family: "Spectral", Georgia, serif;
+      color: #403c36;
+    }
+
+    .launch-confirmed__season {
+      margin: 28px 0 8px;
+      font-size: 19px;
+      line-height: 1.6;
+    }
+
+    .launch-confirmed__subtitle {
+      max-width: 560px;
+      margin: 0 auto;
+      font-size: 22px;
+      line-height: 1.58;
+    }
+
+    .launch-confirmed__note {
+      margin-top: 26px;
+      color: #666159;
+      font-style: italic;
+      font-size: 17px;
+    }
+
+    .launch-confirmed__reveal {
+      margin-top: 68px;
+      text-align: center;
+    }
+
+    .launch-confirmed__reveal-list {
+      display: grid;
+      gap: 18px;
+      margin-top: 28px;
+      text-align: left;
+    }
+
+    .launch-confirmed__reveal-item {
+      padding: 0 0 0 18px;
+      border-left: 3px solid #6e2535;
+    }
+
+    .launch-confirmed__reveal-item p {
+      font-size: 20px;
+      line-height: 1.68;
+    }
+
+    .launch-confirmed__tagline {
+      margin: 36px 0 0;
+      font-size: 21px;
+      font-style: italic;
+      color: #5f5a53;
+    }
+
+    .launch-confirmed__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: center;
+      margin-top: 36px;
+    }
+
+    .launch-confirmed__actions a {
+      text-decoration: none;
+      transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+
+    .launch-confirmed__primary,
+    .launch-confirmed__secondary {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid #d8d2c8;
+      padding: 15px 22px;
+      border-radius: 999px;
+    }
+
+    .launch-confirmed__primary {
+      background: #6e2535;
+      border-color: #6e2535;
+      color: #fffaf3;
+      min-width: 250px;
+    }
+
+    .launch-confirmed__primary:hover {
+      background: #5a1f2c;
+      border-color: #5a1f2c;
+    }
+
+    .launch-confirmed__primary:visited {
+      color: #fffaf3;
+    }
+
+    .launch-confirmed__secondary {
+      color: #3f3b35;
+      background: transparent;
+      border-color: #bdb5aa;
+    }
+
+    .launch-confirmed__secondary:hover,
+    .launch-confirmed__tertiary:hover {
+      border-color: #1a1710;
+      color: #1a1710;
+    }
+
+    .launch-confirmed__secondary:visited,
+    .launch-confirmed__tertiary:visited {
+      color: #3f3b35;
+    }
+
+    .launch-confirmed__tertiary {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #59544d;
+      padding: 14px 10px;
+      border-bottom: 1px solid #d8d2c8;
+    }
+
+    .launch-confirmed__profile {
+      margin-top: 72px;
+      padding-top: 32px;
+      border-top: 1px solid #d8d2c8;
+    }
+
+    .launch-confirmed__profile-head {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .launch-confirmed__profile-head h3 {
+      margin: 10px 0 10px;
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(26px, 4vw, 38px);
+      font-weight: 400;
+      color: #1a1710;
+    }
+
+    .launch-confirmed__profile-head span {
+      font-family: "Spectral", Georgia, serif;
+      color: #615c55;
+      font-size: 16px;
+      font-style: italic;
+    }
+
+    .launch-confirmed__form {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .launch-confirmed__field,
+    .launch-confirmed__field-grid {
+      margin-bottom: 18px;
+    }
+
+    .launch-confirmed__field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .launch-confirmed__field label {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .launch-confirmed__field label span {
+      margin-left: 8px;
+      color: #8f877d;
+    }
+
+    .launch-confirmed__field input,
+    .launch-confirmed__field textarea {
+      width: 100%;
+      border: 1px solid #d8d2c8;
+      background: rgba(247, 243, 238, 0.72);
+      color: #1a1710;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      padding: 16px 18px;
+      border-radius: 14px;
+      outline: none;
+    }
+
+    .launch-confirmed__field textarea {
+      resize: vertical;
+      min-height: 132px;
+    }
+
+    .launch-confirmed__field input:focus,
+    .launch-confirmed__field textarea:focus {
+      border-color: #6e2535;
+      box-shadow: 0 0 0 3px rgba(110, 37, 53, 0.08);
+    }
+
+    .launch-confirmed__form-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .launch-confirmed__form-actions button {
+      appearance: none;
+      border: 1px solid #d8d2c8;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 15px 22px;
+      background: transparent;
+      color: #3f3b35;
+    }
+
+    .launch-confirmed__form-actions button[type="submit"] {
+      background: #6e2535;
+      color: #f6f3ec;
+      border-color: #6e2535;
+    }
+
+    .launch-confirmed__form-actions button[type="submit"]:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .launch-confirmed__warning,
+    .launch-confirmed__success {
+      display: none;
+      margin-top: 14px;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .launch-confirmed__warning.is-visible {
+      display: block;
+      color: #875b2a;
+    }
+
+    .launch-confirmed__success.is-visible {
+      display: block;
+      color: #4a4740;
+    }
+
+    @media (max-width: 720px) {
+      .launch-confirmed {
+        padding: 34px 18px 72px;
+      }
+
+      .launch-confirmed__season {
+        font-size: 16px;
+      }
+
+      .launch-confirmed__subtitle {
+        font-size: 18px;
+      }
+
+      .launch-confirmed__reveal-item {
+        padding-left: 16px;
+      }
+
+      .launch-confirmed__reveal-item p {
+        font-size: 17px;
+      }
+
+      .launch-confirmed__field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .launch-confirmed__form-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</FlowLayout>

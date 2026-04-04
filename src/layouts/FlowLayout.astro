@@ -1,5 +1,6 @@
 ---
 import Telemetry from "@/components/analytics/Telemetry.astro";
+import { routeFromPath } from "@/lib/locales";
 import { absoluteUrl } from "@/lib/seo";
 import Analytics from "@vercel/analytics/astro";
 import SpeedInsights from "@vercel/speed-insights/astro";
@@ -12,6 +13,10 @@ interface Props {
   canonicalPath?: string;
   alternateLinks?: Array<{ hrefLang: string; href: string }>;
   xDefaultHref?: string;
+  locale?: string;
+  ogImage?: string;
+  ogImageAlt?: string;
+  structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
 const {
@@ -22,11 +27,38 @@ const {
   canonicalPath,
   alternateLinks = [],
   xDefaultHref,
+  ogImage,
+  ogImageAlt,
+  structuredData,
 } = Astro.props;
 
-const canonicalUrl = absoluteUrl(canonicalPath || Astro.url.pathname, Astro.url);
+const canonicalUrl = absoluteUrl(canonicalPath || Astro.url.pathname, Astro.url, Astro.request.headers);
 const cleanedAlternates = alternateLinks.filter((link) => Boolean(link.hrefLang && link.href));
 const xDefaultPath = xDefaultHref || cleanedAlternates[0]?.href;
+const flowFontsHref =
+  "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;1,400&family=DM+Sans:wght@400;500;600&display=optional";
+const flowFontsLinkId = "flow-fonts-link";
+const routeForOg = routeFromPath(canonicalPath || Astro.url.pathname);
+const identityOgPage = routeForOg === "about" || routeForOg === "writing" || routeForOg === "privacy"
+  ? routeForOg
+  : "home";
+const socialImage = ogImage || absoluteUrl(`/og/${identityOgPage}.png`, Astro.url, Astro.request.headers);
+const socialImageAlt = ogImageAlt || title;
+const defaultStructuredData: Array<Record<string, unknown>> = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${canonicalUrl}#webpage`,
+    url: canonicalUrl,
+    name: title,
+    description,
+    inLanguage: lang,
+  },
+];
+const pageStructuredData = structuredData
+  ? (Array.isArray(structuredData) ? structuredData : [structuredData])
+  : [];
+const schemaBlocks = [...defaultStructuredData, ...pageStructuredData];
 ---
 
 <!DOCTYPE html>
@@ -37,18 +69,49 @@ const xDefaultPath = xDefaultHref || cleanedAlternates[0]?.href;
   <title>{title}</title>
   <meta name="description" content={description}>
   <meta name="robots" content={robots}>
+  <link rel="icon" type="image/svg+xml" sizes="any" href="/favicons/mono-black.svg">
+  <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png">
+  <meta name="theme-color" content="#F6F3EC">
   <link rel="canonical" href={canonicalUrl}>
   {cleanedAlternates.map((link) => (
-    <link rel="alternate" hreflang={link.hrefLang} href={absoluteUrl(link.href, Astro.url)} />
+    <link rel="alternate" hreflang={link.hrefLang} href={absoluteUrl(link.href, Astro.url, Astro.request.headers)} />
   ))}
-  {xDefaultPath ? <link rel="alternate" hreflang="x-default" href={absoluteUrl(xDefaultPath, Astro.url)} /> : null}
+  {xDefaultPath ? <link rel="alternate" hreflang="x-default" href={absoluteUrl(xDefaultPath, Astro.url, Astro.request.headers)} /> : null}
   <meta property="og:title" content={title}>
   <meta property="og:description" content={description}>
   <meta property="og:type" content="website">
   <meta property="og:url" content={canonicalUrl}>
+  <meta property="og:image" content={socialImage}>
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content={socialImageAlt}>
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={title}>
+  <meta name="twitter:description" content={description}>
+  <meta name="twitter:image" content={socialImage}>
+  <meta name="twitter:image:alt" content={socialImageAlt}>
+  {schemaBlocks.map((item) => (
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(item)}></script>
+  ))}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;1,400&family=DM+Sans:wght@400;500;600&display=optional" rel="stylesheet">
+  <link rel="preload" href={flowFontsHref} as="style">
+  <link id={flowFontsLinkId} href={flowFontsHref} rel="stylesheet" media="print">
+  <noscript><link href={flowFontsHref} rel="stylesheet"></noscript>
+  <script is:inline>
+    (() => {
+      const link = document.getElementById("flow-fonts-link");
+      if (link instanceof HTMLLinkElement) {
+        link.addEventListener(
+          "load",
+          () => {
+            link.media = "all";
+          },
+          { once: true },
+        );
+      }
+    })();
+  </script>
   <Telemetry />
 </head>
 <body class="flow-page">

@@ -6,6 +6,38 @@
     scriptEl instanceof HTMLScriptElement
       ? scriptEl.dataset.posthogHost || "https://us.i.posthog.com"
       : "https://us.i.posthog.com";
+  const parseBoolean = (value, fallback = false) => {
+    if (typeof value !== "string") return fallback;
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) return true;
+    if (["0", "false", "no", "off"].includes(normalized)) return false;
+    return fallback;
+  };
+  const parseNumber = (value, fallback) => {
+    const parsed = Number.parseFloat(String(value || ""));
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(0, Math.min(1, parsed));
+  };
+  const posthogAutocapture =
+    scriptEl instanceof HTMLScriptElement
+      ? parseBoolean(scriptEl.dataset.posthogAutocapture, true)
+      : true;
+  const posthogPageview =
+    scriptEl instanceof HTMLScriptElement ? parseBoolean(scriptEl.dataset.posthogPageview, true) : true;
+  const posthogPageleave =
+    scriptEl instanceof HTMLScriptElement
+      ? parseBoolean(scriptEl.dataset.posthogPageleave, true)
+      : true;
+  const posthogSessionRecording =
+    scriptEl instanceof HTMLScriptElement
+      ? parseBoolean(scriptEl.dataset.posthogSessionRecording, true)
+      : true;
+  const posthogSessionRecordingSampleRate =
+    scriptEl instanceof HTMLScriptElement
+      ? parseNumber(scriptEl.dataset.posthogSessionRecordingSampleRate, 1)
+      : 1;
+  const posthogSurveys =
+    scriptEl instanceof HTMLScriptElement ? parseBoolean(scriptEl.dataset.posthogSurveys, true) : true;
 
   const hasPosthog = Boolean(posthogKey);
   const CONSENT_KEY = "lc_analytics_consent_v1";
@@ -69,6 +101,8 @@
   const baseProps = () =>
     sanitizeProps({
       event_version: EVENT_VERSION,
+      analytics_domain: "editorial",
+      analytics_channel: "client",
       locale,
       page_path: pathname,
       funnel_step: funnelStep,
@@ -166,14 +200,41 @@
 
     window.posthog.init(posthogKey, {
       api_host: posthogHost,
-      autocapture: false,
-      capture_pageview: false,
-      capture_pageleave: false,
-      disable_session_recording: true,
+      autocapture: posthogAutocapture,
+      capture_pageview: posthogPageview,
+      capture_pageleave: posthogPageleave,
+      disable_session_recording: !posthogSessionRecording,
+      disable_surveys: !posthogSurveys,
+      session_recording: {
+        sample_rate: posthogSessionRecordingSampleRate,
+        maskAllInputs: true,
+        maskTextSelector: "[data-ph-mask]",
+        blockSelector: "[data-ph-block]",
+      },
       loaded: () => {
         posthogReady = true;
+        captureNow("analytics_runtime_ready", {
+          posthog_autocapture: posthogAutocapture,
+          posthog_pageview: posthogPageview,
+          posthog_pageleave: posthogPageleave,
+          posthog_session_recording: posthogSessionRecording,
+          posthog_session_recording_sample_rate: posthogSessionRecordingSampleRate,
+          posthog_surveys: posthogSurveys,
+        });
         flushPendingEvents();
         trackInitialView();
+        if (
+          posthogSurveys &&
+          window.posthog &&
+          typeof window.posthog.getActiveMatchingSurveys === "function"
+        ) {
+          window.posthog.getActiveMatchingSurveys((surveys) => {
+            const available = Array.isArray(surveys) ? surveys.length : 0;
+            if (available > 0) {
+              captureNow("posthog_surveys_available", { count: available });
+            }
+          });
+        }
         window.dispatchEvent(new CustomEvent("lc:analytics-ready"));
       },
     });

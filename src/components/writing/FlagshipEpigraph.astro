@@ -1,0 +1,17 @@
+---
+import type { Props as PortableProps } from "astro-portabletext/types";
+
+interface EpigraphNode {
+  _type: "epigraph";
+  text: string;
+}
+
+interface Props extends PortableProps<EpigraphNode> {}
+
+const { node } = Astro.props;
+---
+
+<div class="flagship-epigraph">
+  <div class="flagship-epigraph__rule"></div>
+  <p>{node.text}</p>
+</div>

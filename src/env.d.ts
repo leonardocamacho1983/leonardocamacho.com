@@ -1,5 +1,4 @@
 /// <reference types="astro/client" />
-/// <reference types="@sanity/astro/module" />
 
 interface ImportMetaEnv {
   readonly PUBLIC_SITE_URL?: string;
@@ -22,6 +21,12 @@ interface ImportMetaEnv {
   readonly PUBLIC_LAUNCH_ILLUSTRATION_DEBUG?: string;
   readonly PUBLIC_POSTHOG_KEY?: string;
   readonly PUBLIC_POSTHOG_HOST?: string;
+  readonly PUBLIC_POSTHOG_ENABLE_AUTOCAPTURE?: string;
+  readonly PUBLIC_POSTHOG_ENABLE_PAGEVIEW?: string;
+  readonly PUBLIC_POSTHOG_ENABLE_PAGELEAVE?: string;
+  readonly PUBLIC_POSTHOG_ENABLE_SESSION_RECORDING?: string;
+  readonly PUBLIC_POSTHOG_SESSION_RECORDING_SAMPLE_RATE?: string;
+  readonly PUBLIC_POSTHOG_ENABLE_SURVEYS?: string;
   readonly NEWSLETTER_CONFIRMATION_SUBJECT?: string;
   readonly NEWSLETTER_FLOW_SECRET?: string;
   readonly NEWSLETTER_CONSENT_POLICY_VERSION?: string;
@@ -37,6 +42,9 @@ interface Window {
   posthog?: {
     capture: (eventName: string, properties?: Record<string, unknown>) => void;
     init: (...args: unknown[]) => void;
+    getActiveMatchingSurveys?: (
+      callback: (surveys: Array<Record<string, unknown>>) => void,
+    ) => void;
     [key: string]: unknown;
   };
 }

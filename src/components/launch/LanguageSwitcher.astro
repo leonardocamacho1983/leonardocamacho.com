@@ -1,0 +1,159 @@
+---
+import type { LocaleKey } from "@/lib/locales";
+import type { LaunchLocaleMeta } from "./types";
+
+interface Props {
+  locale: LocaleKey;
+  localeOptions: LaunchLocaleMeta[];
+  localeLinkSuffix?: string;
+  localeHrefMap?: Partial<Record<LocaleKey, string>>;
+  tone?: "light" | "dark";
+}
+
+const {
+  locale,
+  localeOptions,
+  localeLinkSuffix = "",
+  localeHrefMap = {},
+  tone = "light",
+} = Astro.props as Props;
+
+const current = localeOptions.find((item) => item.key === locale) || localeOptions[0];
+const region = current?.key.split("-")[1]?.toUpperCase() || current?.key.toUpperCase() || "US";
+---
+
+<details class="launch-lang" data-tone={tone}>
+  <summary aria-label="Select language">
+    <span>{current?.flag || "🌐"}</span>
+    <span>{region}</span>
+    <svg viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M2.5 3.75L5 6.25L7.5 3.75" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  </summary>
+
+  <div>
+    {localeOptions.map((item) => (
+      <a href={localeHrefMap[item.key] || `/${item.key}/launch${localeLinkSuffix}`} aria-current={item.key === locale ? "true" : undefined}>
+        <span>{item.flag}</span>
+        <span>{item.label}</span>
+      </a>
+    ))}
+  </div>
+</details>
+
+<style>
+  .launch-lang {
+    position: relative;
+    z-index: 50;
+  }
+
+  .launch-lang summary {
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 7px 10px;
+    border: 1px solid;
+    border-radius: 999px;
+    transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+  }
+
+  .launch-lang summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .launch-lang summary svg {
+    width: 9px;
+    height: 9px;
+    transition: transform 0.2s;
+  }
+
+  .launch-lang[open] summary svg {
+    transform: rotate(180deg);
+  }
+
+  .launch-lang div {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 190px;
+    padding: 6px 0;
+    border: 1px solid;
+    border-radius: 10px;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.14);
+    backdrop-filter: blur(10px);
+  }
+
+  .launch-lang a {
+    display: flex;
+    gap: 9px;
+    align-items: center;
+    padding: 8px 11px;
+    text-decoration: none;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 12px;
+  }
+
+  .launch-lang a[aria-current="true"] {
+    font-weight: 600;
+  }
+
+  .launch-lang[data-tone="light"] summary {
+    color: #3e3934;
+    border-color: rgba(110, 106, 99, 0.5);
+    background: rgba(246, 243, 236, 0.92);
+  }
+
+  .launch-lang[data-tone="light"] summary:hover {
+    color: #1a1710;
+    border-color: rgba(110, 37, 53, 0.42);
+    background: rgba(246, 243, 236, 1);
+  }
+
+  .launch-lang[data-tone="light"] div {
+    background: rgba(246, 243, 236, 0.96);
+    border-color: rgba(110, 106, 99, 0.34);
+  }
+
+  .launch-lang[data-tone="light"] a {
+    color: #4a4740;
+  }
+
+  .launch-lang[data-tone="light"] a:hover,
+  .launch-lang[data-tone="light"] a[aria-current="true"] {
+    color: #1a1710;
+    background: rgba(110, 37, 53, 0.07);
+  }
+
+  .launch-lang[data-tone="dark"] summary {
+    color: rgba(246, 243, 236, 0.86);
+    border-color: rgba(246, 243, 236, 0.34);
+    background: rgba(12, 7, 4, 0.64);
+  }
+
+  .launch-lang[data-tone="dark"] summary:hover {
+    color: #fff;
+    border-color: rgba(246, 243, 236, 0.52);
+    background: rgba(12, 7, 4, 0.8);
+  }
+
+  .launch-lang[data-tone="dark"] div {
+    background: rgba(12, 7, 4, 0.94);
+    border-color: rgba(246, 243, 236, 0.24);
+  }
+
+  .launch-lang[data-tone="dark"] a {
+    color: rgba(246, 243, 236, 0.76);
+  }
+
+  .launch-lang[data-tone="dark"] a:hover,
+  .launch-lang[data-tone="dark"] a[aria-current="true"] {
+    color: #fff;
+    background: rgba(246, 243, 236, 0.1);
+  }
+</style>

@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { trackGrowthEvent } from "@/lib/analytics/growth";
 import {
   createNewsletterStateToken,
   hasNewsletterStateTokenSecret,
@@ -25,31 +26,121 @@ const redirectTo = (location: string): Response =>
     },
   });
 
-const buildThanksPath = (locale: string, status: string, state?: string): string => {
+const isLaunchSource = (source: string): boolean =>
+  source.startsWith("launch_home") || source === "launch_archive" || source === "launch-mode";
+
+const buildThanksPath = (locale: string, status: string, source: string, state?: string): string => {
   const params = new URLSearchParams({ status });
   if (state) {
     params.set("state", state);
   }
-  return `/${locale}/newsletter/thanks?${params.toString()}`;
+  const basePath = isLaunchSource(source) ? `/${locale}/launch/thanks` : `/${locale}/newsletter/thanks`;
+  return `${basePath}?${params.toString()}`;
+};
+
+const mapSourceToSurface = (source: string): string => {
+  if (source.startsWith("launch_home")) return "launch_home";
+  if (source === "launch_archive") return "launch_archive";
+  if (source === "home") return "home";
+  if (source === "writing") return "writing_index";
+  if (source === "launch-mode") return "launch";
+  return "other";
+};
+
+const parseVariant = (value: string): string | undefined => {
+  const normalized = sanitizeText(value, 12).toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized === "v1" || normalized === "v2" || normalized === "v3") return normalized;
+  return undefined;
+};
+
+const trackGrowthSafely = async (
+  event: Parameters<typeof trackGrowthEvent>[0],
+  properties: Parameters<typeof trackGrowthEvent>[1],
+): Promise<void> => {
+  try {
+    await trackGrowthEvent(event, properties);
+  } catch {
+    // Do not fail subscription flow because tracking failed.
+  }
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  const formData = await request.formData();
-  const locale = parseLocale(getFormValue(formData, "locale"));
-  const email = normalizeEmail(getFormValue(formData, "email"));
-  const source = sanitizeText(getFormValue(formData, "source"), 40) || "unknown";
-  const path = sanitizePath(getFormValue(formData, "path")) || `/${locale}`;
+  const contentType = request.headers.get("content-type") || "";
+  let payload:
+    | {
+        locale?: string;
+        email?: string;
+        source?: string;
+        variant?: string;
+        path?: string;
+      }
+    | undefined;
+
+  if (contentType.includes("application/json")) {
+    payload = (await request.json().catch(() => ({}))) as typeof payload;
+  } else {
+    const formData = await request.formData();
+    payload = {
+      locale: getFormValue(formData, "locale"),
+      email: getFormValue(formData, "email"),
+      source: getFormValue(formData, "source"),
+      variant: getFormValue(formData, "variant"),
+      path: getFormValue(formData, "path"),
+    };
+  }
+
+  const locale = parseLocale(payload?.locale || "");
+  const email = normalizeEmail(payload?.email || "");
+  const source = sanitizeText(payload?.source || "", 40) || "unknown";
+  const variantFromForm = parseVariant(payload?.variant || "");
+  const variantFromSource = parseVariant(source.split("_").at(-1) || "");
+  const variant = variantFromForm || variantFromSource;
+  const path = sanitizePath(payload?.path || "") || `/${locale}`;
+  const surfaceType = mapSourceToSurface(source);
+
+  await trackGrowthSafely("newsletter_subscribe_attempt", {
+    locale,
+    path,
+    source,
+    surface_type: surfaceType,
+    variant,
+  });
 
   if (!isValidEmail(email)) {
-    return redirectTo(buildThanksPath(locale, "invalid-email"));
+    await trackGrowthSafely("newsletter_subscribe_failed", {
+      locale,
+      path,
+      source,
+      surface_type: surfaceType,
+      reason: "invalid_email",
+      variant,
+    });
+    return redirectTo(buildThanksPath(locale, "invalid-email", source));
   }
   if (!isKitConfigured() || !hasNewsletterStateTokenSecret()) {
-    return redirectTo(buildThanksPath(locale, "service-unavailable"));
+    await trackGrowthSafely("newsletter_subscribe_failed", {
+      locale,
+      path,
+      source,
+      surface_type: surfaceType,
+      reason: "service_unavailable",
+      variant,
+    });
+    return redirectTo(buildThanksPath(locale, "service-unavailable", source));
   }
 
   const ip = getClientIp(request.headers);
   if (isRateLimited(`newsletter:subscribe:${ip}:${email}`, 8, 60_000)) {
-    return redirectTo(buildThanksPath(locale, "rate-limited"));
+    await trackGrowthSafely("newsletter_subscribe_failed", {
+      locale,
+      path,
+      source,
+      surface_type: surfaceType,
+      reason: "rate_limited",
+      variant,
+    });
+    return redirectTo(buildThanksPath(locale, "rate-limited", source));
   }
 
   try {
@@ -68,10 +159,26 @@ export const POST: APIRoute = async ({ request }) => {
       consentPolicyVersion,
     });
 
+    await trackGrowthSafely("newsletter_subscribe_success", {
+      locale,
+      path,
+      source,
+      surface_type: surfaceType,
+      variant,
+    });
+
     const state = createNewsletterStateToken({ email, locale });
-    return redirectTo(buildThanksPath(locale, "subscribed", state));
+    return redirectTo(buildThanksPath(locale, "subscribed", source, state));
   } catch (error) {
     console.error("[newsletter/subscribe] Subscription failed", error);
-    return redirectTo(buildThanksPath(locale, "subscribe-error"));
+    await trackGrowthSafely("newsletter_subscribe_failed", {
+      locale,
+      path,
+      source,
+      surface_type: surfaceType,
+      reason: "subscribe_error",
+      variant,
+    });
+    return redirectTo(buildThanksPath(locale, "subscribe-error", source));
   }
 };

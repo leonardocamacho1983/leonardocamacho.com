@@ -3,6 +3,7 @@ export const prerender = false;
 import crypto from "node:crypto";
 import type { APIRoute } from "astro";
 import { LOCALES, isLocale, type LocaleKey } from "@/lib/locales";
+import { siteOrigin } from "@/lib/seo";
 
 interface SanityWebhookPayload {
   _id?: string;
@@ -126,29 +127,7 @@ const normalizePath = (path: string): string => {
   return clean.replace(/\/+$/, "");
 };
 
-const requestOrigin = (request: Request, requestUrl: URL): string => {
-  const forwardedHost = getFirstHeader(request.headers, ["x-forwarded-host"]);
-  const host = forwardedHost || getFirstHeader(request.headers, ["host"]);
-  const proto =
-    getFirstHeader(request.headers, ["x-forwarded-proto"]) ||
-    requestUrl.protocol.replace(":", "") ||
-    "https";
-
-  if (host) {
-    return `${proto}://${host}`.replace(/\/+$/, "");
-  }
-
-  const configured = (import.meta.env.PUBLIC_SITE_URL || "").trim();
-  if (configured) {
-    try {
-      return new URL(configured).origin.replace(/\/+$/, "");
-    } catch {}
-  }
-
-  return requestUrl.origin.replace(/\/+$/, "");
-};
-
-const absoluteUrl = (origin: string, path: string): string =>
+const absoluteUrlFromOrigin = (origin: string, path: string): string =>
   `${origin}${path.startsWith("/") ? path : `/${path}`}`;
 
 const readLocale = (payload: SanityWebhookPayload): LocaleKey | null => {
@@ -177,7 +156,6 @@ const shouldCheckInSitemap = (path: string): boolean => {
   const normalized = normalizePath(path);
   if (shouldBeNoindex(normalized)) return false;
   if (normalized.startsWith("/api/")) return false;
-  if (normalized.startsWith("/studio")) return false;
   return true;
 };
 
@@ -271,14 +249,14 @@ const runSeoAuditMvp = async (
 
   let sitemapXml = "";
   try {
-    const sitemap = await safeFetchText(absoluteUrl(origin, "/sitemap.xml"));
+    const sitemap = await safeFetchText(absoluteUrlFromOrigin(origin, "/sitemap.xml"));
     if (sitemap.status === 200) {
       sitemapXml = sitemap.body;
     } else {
       addIssue(issues, {
         severity: "P1",
         code: "SITEMAP_UNAVAILABLE",
-        url: absoluteUrl(origin, "/sitemap.xml"),
+        url: absoluteUrlFromOrigin(origin, "/sitemap.xml"),
         message: `sitemap.xml returned ${sitemap.status}`,
       });
     }
@@ -286,14 +264,14 @@ const runSeoAuditMvp = async (
     addIssue(issues, {
       severity: "P1",
       code: "SITEMAP_FETCH_ERROR",
-      url: absoluteUrl(origin, "/sitemap.xml"),
+      url: absoluteUrlFromOrigin(origin, "/sitemap.xml"),
       message: error instanceof Error ? error.message : "unknown error",
     });
   }
 
   for (const path of affectedPaths) {
     const normalizedPath = normalizePath(path);
-    const url = absoluteUrl(origin, normalizedPath);
+    const url = absoluteUrlFromOrigin(origin, normalizedPath);
     auditedUrls.push(url);
 
     let response: { status: number; body: string };
@@ -488,7 +466,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
   let seoAuditSummary: Record<string, unknown> = { executed: false };
   if (documentType && SEO_AUDIT_DOC_TYPES.has(documentType)) {
-    const origin = requestOrigin(request, url);
+    const origin = siteOrigin(url, request.headers);
     const affectedPaths = buildAffectedPaths(payload);
 
     if (affectedPaths.length === 0) {

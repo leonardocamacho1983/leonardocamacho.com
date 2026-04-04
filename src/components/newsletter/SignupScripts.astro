@@ -1,7 +1,11 @@
 <script is:inline>
   const trackEvent = (eventName, props = {}) => {
     if (typeof window.lcTrack !== 'function') return;
-    window.lcTrack(eventName, props);
+    window.lcTrack(eventName, {
+      analytics_domain: 'growth',
+      analytics_channel: 'client',
+      ...props,
+    });
   };
 
   const resolveKitLocale = (path) => {
@@ -31,6 +35,21 @@
     try {
       window.sessionStorage.setItem('ck_subscriber_id', subscriberId);
     } catch {}
+  };
+
+  const submitNative = (formEl) => {
+    if (!(formEl instanceof HTMLFormElement)) return;
+    HTMLFormElement.prototype.submit.call(formEl);
+  };
+
+  const parseSubscribeStatusFromResponseUrl = (value) => {
+    if (!value) return '';
+    try {
+      const parsed = new URL(value, window.location.origin);
+      return (parsed.searchParams.get('status') || '').trim();
+    } catch {
+      return '';
+    }
   };
 
   const attachLaunchSignupForm = () => {
@@ -118,6 +137,7 @@
 
       btn.disabled = true;
       btn.textContent = '...';
+      trackEvent('home_subscribe_submit_clicked', { surface_type: 'home', path });
 
       try {
         const res = await fetch('/api/subscribe', {
@@ -139,6 +159,7 @@
           } catch {}
 
           persistSubscriberId(subscriberId);
+          trackEvent('home_subscribe_success', { surface_type: 'home', path });
 
           const prefix = path.startsWith('/pt-br') ? '/pt-br'
                        : path.startsWith('/pt-pt') || path.startsWith('/pt/') ? '/pt'
@@ -146,11 +167,22 @@
                        : '';
           window.location.href = buildRedirectUrl(`${prefix}/welcome`, subscriberId);
         } else {
+          trackEvent('home_subscribe_failed', {
+            surface_type: 'home',
+            path,
+            reason: 'http_error',
+            status: res.status,
+          });
           btn.textContent = 'TRY AGAIN';
           btn.disabled = false;
           setTimeout(() => { btn.textContent = originalText; }, 2000);
         }
       } catch {
+        trackEvent('home_subscribe_failed', {
+          surface_type: 'home',
+          path,
+          reason: 'network_error',
+        });
         btn.textContent = 'TRY AGAIN';
         btn.disabled = false;
         setTimeout(() => { btn.textContent = originalText; }, 2000);
@@ -158,6 +190,110 @@
     });
   };
 
+  const attachWritingSignupForms = () => {
+    const forms = Array.from(document.querySelectorAll('form.archive-newsletter__form[action="/api/newsletter/subscribe"]'));
+    if (!forms.length) return;
+
+    forms.forEach((writingForm) => {
+      if (!(writingForm instanceof HTMLFormElement)) return;
+
+      writingForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitButton = writingForm.querySelector('button[type="submit"]');
+        const inputEmail = writingForm.querySelector('input[type="email"]');
+        const originalButtonText = submitButton?.textContent || '';
+        const path = window.location.pathname;
+
+        trackEvent('writing_subscribe_submit_clicked', {
+          surface_type: 'writing_index',
+          path,
+        });
+
+        if (submitButton instanceof HTMLButtonElement) {
+          submitButton.disabled = true;
+          submitButton.textContent = '...';
+        }
+
+        if (!(inputEmail instanceof HTMLInputElement) || !inputEmail.value.trim()) {
+          trackEvent('writing_subscribe_failed', {
+            surface_type: 'writing_index',
+            path,
+            reason: 'missing_email',
+          });
+          if (submitButton instanceof HTMLButtonElement) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
+
+        try {
+          const payload = {
+            locale: String(new FormData(writingForm).get('locale') || ''),
+            email: inputEmail.value.trim(),
+            source: String(new FormData(writingForm).get('source') || 'writing'),
+            path: String(new FormData(writingForm).get('path') || path),
+          };
+          const res = await fetch(writingForm.action, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json, text/plain, */*',
+            },
+            body: JSON.stringify(payload),
+            credentials: 'same-origin',
+          });
+
+          if (!res.ok) {
+            trackEvent('writing_subscribe_failed', {
+              surface_type: 'writing_index',
+              path,
+              reason: 'http_error',
+              status: res.status,
+            });
+            submitNative(writingForm);
+            return;
+          }
+
+          const finalStatus = parseSubscribeStatusFromResponseUrl(res.url);
+          if (finalStatus === 'subscribed') {
+            trackEvent('writing_subscribe_success', {
+              surface_type: 'writing_index',
+              path,
+            });
+          } else {
+            trackEvent('writing_subscribe_failed', {
+              surface_type: 'writing_index',
+              path,
+              reason: finalStatus || 'unexpected_status',
+            });
+          }
+
+          if (res.url) {
+            window.location.href = res.url;
+            return;
+          }
+
+          submitNative(writingForm);
+        } catch {
+          trackEvent('writing_subscribe_failed', {
+            surface_type: 'writing_index',
+            path,
+            reason: 'network_error',
+          });
+          submitNative(writingForm);
+        } finally {
+          if (submitButton instanceof HTMLButtonElement) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+        }
+      });
+    });
+  };
+
   attachLaunchSignupForm();
   attachHomeSignupForm();
+  attachWritingSignupForms();
 </script>

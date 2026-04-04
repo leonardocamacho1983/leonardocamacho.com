@@ -1,0 +1,58 @@
+<svg width="100%" viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three-moment timeline showing when revision is needed, when it becomes prohibitive, and when crisis arrives">
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 2L8 5L2 8" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<!-- Timeline axis -->
+<line x1="60" y1="128" x2="630" y2="128" stroke="#5C5849" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="640" y="132" font-family="'DM Sans', sans-serif" font-size="11" fill="#5C5849">Time</text>
+
+<!-- Zone 1: Plasticity window — light ink wash, rule gray border -->
+<rect x="60" y="93" width="220" height="36" rx="3" fill="#1A1710" fill-opacity="0.04" stroke="#C6C1B2" stroke-width="0.5"/>
+<text x="170" y="116" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="11" fill="#5C5849">Plasticity window — revision survivable</text>
+
+<!-- Zone 2: Cost prohibitive — slightly deeper wash, warm stone border -->
+<rect x="280" y="93" width="200" height="36" rx="3" fill="#1A1710" fill-opacity="0.07" stroke="#5C5849" stroke-width="0.5"/>
+<text x="380" y="116" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="11" fill="#5C5849">Revision cost prohibitive</text>
+
+<!-- Zone 3: Window closed — oxblood border, the crisis state -->
+<rect x="480" y="93" width="140" height="36" rx="3" fill="#1A1710" fill-opacity="0.10" stroke="#6E2535" stroke-width="1"/>
+<text x="550" y="116" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="11" fill="#6E2535">Window closed</text>
+
+<!-- Zone boundary dividers -->
+<line x1="280" y1="86" x2="280" y2="170" stroke="#C6C1B2" stroke-width="0.5" stroke-dasharray="3 2"/>
+<line x1="480" y1="86" x2="480" y2="170" stroke="#C6C1B2" stroke-width="0.5" stroke-dasharray="3 2"/>
+
+<!-- Moment 1: Revision needed — ink -->
+<line x1="140" y1="72" x2="140" y2="91" stroke="#1A1710" stroke-width="1.5"/>
+<circle cx="140" cy="128" r="5" fill="#1A1710"/>
+<rect x="60" y="30" width="162" height="42" rx="3" fill="none" stroke="#1A1710" stroke-width="1"/>
+<text x="141" y="47" text-anchor="middle" dominant-baseline="central" font-family="'DM Sans', sans-serif" font-size="13" font-weight="500" fill="#1A1710">Revision needed</text>
+<text x="141" y="63" text-anchor="middle" dominant-baseline="central" font-family="'DM Sans', sans-serif" font-size="11" fill="#5C5849">Signal exists, cost is low</text>
+
+<!-- Moment 2: Model calcified — warm stone -->
+<line x1="380" y1="72" x2="380" y2="91" stroke="#5C5849" stroke-width="1.5"/>
+<circle cx="380" cy="128" r="5" fill="#5C5849"/>
+<rect x="300" y="30" width="160" height="42" rx="3" fill="none" stroke="#5C5849" stroke-width="1"/>
+<text x="380" y="47" text-anchor="middle" dominant-baseline="central" font-family="'DM Sans', sans-serif" font-size="13" font-weight="500" fill="#1A1710">Model calcified</text>
+<text x="380" y="63" text-anchor="middle" dominant-baseline="central" font-family="'DM Sans', sans-serif" font-size="11" fill="#5C5849">Organization built on it</text>
+
+<!-- Moment 3: Crisis visible — oxblood -->
+<line x1="550" y1="72" x2="550" y2="91" stroke="#6E2535" stroke-width="1.5"/>
+<circle cx="550" cy="128" r="5" fill="#6E2535"/>
+<rect x="472" y="30" width="156" height="42" rx="3" fill="none" stroke="#6E2535" stroke-width="1"/>
+<text x="550" y="47" text-anchor="middle" dominant-baseline="central" font-family="'DM Sans', sans-serif" font-size="13" font-weight="500" fill="#1A1710">Crisis visible</text>
+<text x="550" y="63" text-anchor="middle" dominant-baseline="central" font-family="'DM Sans', sans-serif" font-size="11" fill="#5C5849">Transformation too costly</text>
+
+<!-- Diagnostic labels below timeline -->
+<text x="170" y="156" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="11" fill="#1A1710">Where to act</text>
+<text x="380" y="156" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="11" fill="#5C5849">Where most firms are</text>
+<text x="550" y="156" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="11" fill="#6E2535">Where most firms act</text>
+
+<!-- Key insight callout -->
+<rect x="80" y="174" width="520" height="48" rx="3" fill="none" stroke="#C6C1B2" stroke-width="0.5"/>
+<text x="340" y="194" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="12" fill="#1A1710">The conditions that make change most necessary</text>
+<text x="340" y="212" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="12" fill="#1A1710">are precisely the conditions that make it most costly.</text>
+</svg>

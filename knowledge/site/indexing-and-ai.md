@@ -48,3 +48,51 @@ This project uses a simple indexing baseline for both traditional search engines
 - If new funnel/internal routes are added, decide whether they should be:
   - `index,follow` (content routes), or
   - `noindex` and/or blocked in `robots.txt` (internal workflow routes).
+
+## Search Console tracking workflow
+
+Use this workflow to track query movement and indexing movement systematically from Google Search Console exports.
+
+### Required export (Performance)
+
+From Search Console `Performance` report:
+- export as CSV with dimensions:
+  - `Query`
+  - `Page`
+- metrics:
+  - `Clicks`
+  - `Impressions`
+  - `CTR`
+  - `Position`
+
+### Optional export (Indexing)
+
+From Search Console `Page indexing`:
+- export as CSV containing:
+  - `Reason`
+  - `Pages`
+
+### Run tracking
+
+```bash
+npm run seo:track -- \
+  --csv /absolute/path/to/search-console-performance.csv \
+  --indexing-csv /absolute/path/to/search-console-indexing.csv \
+  --property leonardocamacho.com \
+  --window last-28-days
+```
+
+### Outputs
+
+Artifacts are written to:
+- `/tmp/seo-tracking/<timestamp>-seo-tracking/`
+
+Key files:
+- `summary.txt`
+- `performance.snapshot.json`
+- `performance.movement.json`
+- `indexing.snapshot.json` (if provided)
+- `indexing.movement.json` (if provided)
+
+Rolling history is maintained at:
+- `/tmp/seo-tracking/history.json`

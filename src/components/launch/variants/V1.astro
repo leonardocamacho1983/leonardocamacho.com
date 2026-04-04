@@ -1,0 +1,550 @@
+---
+import { formatReadTime } from "@/lib/format";
+import type { LaunchVariantProps } from "../types";
+
+const {
+  locale,
+  variant,
+  featured,
+  coverlines,
+  launchPath,
+  archivePath,
+  homePath,
+  launchImage,
+  copy,
+} = Astro.props as LaunchVariantProps;
+
+const featuredTitle = featured
+  ? `${featured.title}${featured.titleEmphasis ? ` ${featured.titleEmphasis}` : ""}`
+  : "";
+const featuredExcerpt = featured?.excerpt || "";
+const featuredCategory = featured?.category?.title || copy.featuredLabelFallback;
+const featuredRead = featured ? formatReadTime(featured.readTimeMinutes) : "";
+const sourceValue = `launch_home_${variant}`;
+const launchPostPath = (slug: string) => `/${locale}/launch/archive/${slug}`;
+const hasCoverlines = coverlines.length > 0;
+---
+
+<div class:list={["launch-v1", { "launch-v1--single": !hasCoverlines }]} data-launch-home data-variant={variant}>
+  <section class="launch-v1__left">
+    <div class:list={["launch-v1__masthead", { "launch-v1__masthead--single": !hasCoverlines }]}>
+      <a class="launch-v1__brand" href={homePath}>L</a>
+      {hasCoverlines ? (
+        <ul class="launch-v1__coverlines">
+          {coverlines.map((post) => (
+            <li>
+              <a data-launch-article-link href={launchPostPath(post.slug)}>
+                <span>{post.title}{post.titleEmphasis ? ` ${post.titleEmphasis}` : ""}</span>
+                <span>{formatReadTime(post.readTimeMinutes)}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+
+    {featured ? (
+      <article class="launch-v1__hero">
+        {launchImage ? <img src={launchImage} alt={featuredTitle} loading="eager" width="1600" height="1300" /> : null}
+        <div class="launch-v1__hero-overlay"></div>
+        <div class="launch-v1__hero-copy">
+          <p>{featuredCategory}</p>
+          <a class="launch-v1__hero-title" data-launch-article-link href={launchPostPath(featured.slug)}>{featuredTitle}</a>
+          <p>{featuredExcerpt}</p>
+          <a class="launch-v1__hero-read" data-launch-article-link href={launchPostPath(featured.slug)}>
+            <span>{copy.readPrefix}</span>
+            <span aria-hidden="true">-</span>
+            <span>{featuredRead}</span>
+          </a>
+        </div>
+      </article>
+    ) : null}
+  </section>
+
+  <section class:list={["launch-v1__right", { "launch-v1__right--single": !hasCoverlines }]}>
+    <div class:list={["launch-v1__right-inner", { "launch-v1__right-inner--single": !hasCoverlines }]}>
+      <div class:list={["launch-v1__byline", { "launch-v1__byline--single": !hasCoverlines }]}>
+        <span></span>
+        <p>{copy.domainLabel}</p>
+        <span></span>
+      </div>
+
+      <h1>
+        {copy.titleLines.map((part, index) => (
+          <>
+            {index > 0 ? <br /> : null}
+            {part.accent ? <em>{part.text}</em> : part.text}
+          </>
+        ))}
+      </h1>
+      <p class="launch-v1__sub">{copy.subtitle}</p>
+      <hr />
+
+      <form class="launch-v1__form" method="POST" action="/api/newsletter/subscribe" data-launch-form>
+        <input type="hidden" name="locale" value={locale} />
+        <input type="hidden" name="source" value={sourceValue} />
+        <input type="hidden" name="variant" value={variant} />
+        <input type="hidden" name="path" value={launchPath} />
+        <input type="email" name="email" placeholder={copy.placeholder} required />
+        <button type="submit">{copy.cta}</button>
+      </form>
+      <p class="launch-v1__note">{copy.footerNote}</p>
+
+      <a class="launch-v1__archive-link" data-launch-latest-link href={archivePath}>{copy.secondaryLink}</a>
+    </div>
+  </section>
+
+</div>
+
+<style>
+  .launch-v1 {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    height: 100svh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #f6f3ec;
+    color: #1a1710;
+    overflow: hidden;
+  }
+
+  .launch-v1--single {
+    grid-template-columns: 52fr 48fr;
+  }
+
+  .launch-v1__left {
+    position: relative;
+    background: #12100f;
+    border-right: 1px solid #d8d2c8;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .launch-v1__masthead {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 4;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .launch-v1__masthead--single {
+    grid-template-columns: 72px;
+    width: fit-content;
+    border-right: 1px solid rgba(255, 255, 255, 0.16);
+    border-bottom-color: rgba(255, 255, 255, 0.24);
+  }
+
+  .launch-v1__brand {
+    text-decoration: none;
+    color: #fff;
+    border-right: 1px solid rgba(255, 255, 255, 0.16);
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .launch-v1__masthead--single .launch-v1__brand {
+    min-height: 72px;
+    font-size: 46px;
+    border-right: none;
+  }
+
+  .launch-v1__coverlines {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: rgba(18, 14, 13, 0.34);
+  }
+
+  .launch-v1__coverlines li + li {
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  .launch-v1__coverlines a {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    color: rgba(255, 255, 255, 0.86);
+    text-decoration: none;
+    padding: 9px 16px;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 14px;
+  }
+
+  .launch-v1__coverlines a span:last-child {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.52);
+    white-space: nowrap;
+  }
+
+  .launch-v1__hero {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .launch-v1__hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.92) brightness(0.78);
+  }
+
+  .launch-v1--single .launch-v1__hero img {
+    object-position: center center;
+    filter: saturate(0.94) brightness(0.8);
+  }
+
+  .launch-v1__hero-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to bottom, rgba(15, 10, 8, 0.76) 0%, rgba(15, 10, 8, 0) 30%),
+      linear-gradient(to top, rgba(15, 10, 8, 0.9) 0%, rgba(15, 10, 8, 0) 56%);
+    z-index: 1;
+  }
+
+  .launch-v1--single .launch-v1__hero-overlay {
+    background:
+      linear-gradient(to bottom, rgba(15, 10, 8, 0.58) 0%, rgba(15, 10, 8, 0) 24%),
+      linear-gradient(to top, rgba(15, 10, 8, 0.92) 0%, rgba(15, 10, 8, 0) 52%);
+  }
+
+  .launch-v1__hero-copy {
+    position: absolute;
+    left: clamp(22px, 3vw, 38px);
+    right: clamp(22px, 3vw, 38px);
+    bottom: clamp(22px, 3.4vw, 40px);
+    z-index: 2;
+    color: #fff;
+  }
+
+  .launch-v1--single .launch-v1__hero-copy {
+    left: clamp(26px, 3.4vw, 44px);
+    right: clamp(26px, 3.4vw, 44px);
+    bottom: clamp(28px, 3.8vw, 48px);
+  }
+
+  .launch-v1__hero-copy p:first-child {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(220, 160, 150, 0.92);
+    margin-bottom: 10px;
+  }
+
+  .launch-v1__hero-title {
+    display: block;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(32px, 5vw, 62px);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-decoration: none;
+    margin-bottom: 12px;
+    max-width: 720px;
+    text-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    transition:
+      color 0.32s ease,
+      text-shadow 0.42s ease,
+      transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.32s ease;
+  }
+
+  .launch-v1__hero-title:hover,
+  .launch-v1__hero-title:focus-visible {
+    color: #fff7f3;
+    text-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.24),
+      0 0 18px rgba(255, 244, 238, 0.16);
+    transform: translateY(-2px);
+  }
+
+  .launch-v1__hero-title:focus-visible {
+    outline: 2px solid rgba(246, 243, 236, 0.76);
+    outline-offset: 6px;
+  }
+
+  .launch-v1--single .launch-v1__hero-title {
+    font-size: clamp(38px, 5.4vw, 72px);
+    max-width: 640px;
+    margin-bottom: 10px;
+  }
+
+  .launch-v1__hero-copy p:nth-of-type(2) {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 19px;
+    line-height: 1.42;
+    color: rgba(255, 255, 255, 0.76);
+    margin-bottom: 16px;
+    max-width: 700px;
+  }
+
+  .launch-v1--single .launch-v1__hero-copy p:nth-of-type(2) {
+    font-size: 17px;
+    line-height: 1.5;
+    max-width: 560px;
+  }
+
+  .launch-v1__hero-read {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.84);
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .launch-v1__hero-read span:last-child {
+    color: rgba(255, 255, 255, 0.52);
+    letter-spacing: 0.1em;
+  }
+
+  .launch-v1__right {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .launch-v1__right-inner {
+    width: min(520px, calc(100% - 58px));
+  }
+
+  .launch-v1__right-inner--single {
+    width: min(500px, calc(100% - 80px));
+  }
+
+  .launch-v1__byline {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 34px;
+  }
+
+  .launch-v1__byline--single {
+    margin-bottom: 28px;
+  }
+
+  .launch-v1__byline span {
+    width: 32px;
+    height: 1px;
+    background: #d8d2c8;
+  }
+
+  .launch-v1__byline p {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: #6e6a63;
+  }
+
+  .launch-v1__right h1 {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(42px, 5vw, 76px);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    color: #1a1710;
+    margin: 0 0 16px;
+  }
+
+  .launch-v1__right--single h1 {
+    font-size: clamp(40px, 4.8vw, 68px);
+    margin-bottom: 14px;
+  }
+
+  .launch-v1__right h1 em {
+    color: #6e2535;
+    font-style: italic;
+  }
+
+  .launch-v1__sub {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.68;
+    color: #4a4740;
+    margin-bottom: 24px;
+  }
+
+  .launch-v1__right--single .launch-v1__sub {
+    font-size: 16px;
+    line-height: 1.62;
+    max-width: 28ch;
+    margin-bottom: 22px;
+  }
+
+  .launch-v1__right hr {
+    border: none;
+    border-top: 1px solid #d8d2c8;
+    margin: 0 0 24px;
+  }
+
+  .launch-v1__right--single hr {
+    margin-bottom: 22px;
+  }
+
+  .launch-v1__form {
+    display: flex;
+    min-height: 48px;
+    border: 1px solid #d8d2c8;
+    background: #f0ede5;
+    margin-bottom: 10px;
+  }
+
+  .launch-v1__right--single .launch-v1__form {
+    min-height: 54px;
+    background: #f4f0e8;
+    margin-bottom: 12px;
+  }
+
+  .launch-v1__form input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 0 16px;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 15px;
+    color: #1a1710;
+    outline: none;
+  }
+
+  .launch-v1__form button {
+    border: none;
+    background: #6e2535;
+    color: #fff;
+    padding: 0 22px;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    cursor: pointer;
+  }
+
+  .launch-v1__note {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 12px;
+    color: #6e6a63;
+    margin-bottom: 16px;
+  }
+
+  .launch-v1__right--single .launch-v1__note {
+    margin-bottom: 14px;
+  }
+
+  .launch-v1__archive-link {
+    display: inline-flex;
+    color: #6e6a63;
+    text-decoration: none;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 12px;
+    border-bottom: 1px solid #d8d2c8;
+    padding-bottom: 2px;
+  }
+
+  .launch-v1__right--single .launch-v1__archive-link {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 1040px) {
+    .launch-v1 {
+      grid-template-columns: 1fr;
+      grid-template-rows: 52svh 48svh;
+      height: 100svh;
+      overflow: hidden;
+    }
+
+    .launch-v1__left {
+      min-height: 0;
+      border-right: none;
+      border-bottom: 1px solid #d8d2c8;
+    }
+
+    .launch-v1__hero {
+      height: 100%;
+    }
+
+    .launch-v1__coverlines {
+      display: none;
+    }
+
+    .launch-v1__masthead {
+      grid-template-columns: 1fr;
+    }
+
+    .launch-v1__brand {
+      min-height: 56px;
+      border-right: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+      width: fit-content;
+      padding: 0 16px;
+      font-size: 34px;
+    }
+
+    .launch-v1__right {
+      padding: 20px 0 52px;
+    }
+
+    .launch-v1__right-inner {
+      width: min(560px, calc(100% - 36px));
+      max-height: 100%;
+      overflow: hidden;
+    }
+
+    .launch-v1__byline {
+      margin-bottom: 18px;
+    }
+
+    .launch-v1__right h1 {
+      font-size: clamp(34px, 9vw, 52px);
+      margin-bottom: 12px;
+    }
+
+    .launch-v1__sub {
+      font-size: 14px;
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
+
+    .launch-v1__right hr {
+      margin-bottom: 16px;
+    }
+
+    .launch-v1__note {
+      font-size: 11px;
+      margin-bottom: 10px;
+    }
+
+    .launch-v1__archive-link {
+      font-size: 11px;
+    }
+  }
+
+  @media (max-width: 1040px) and (max-height: 760px) {
+    .launch-v1__note {
+      display: none;
+    }
+  }
+</style>

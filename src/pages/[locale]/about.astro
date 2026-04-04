@@ -6,6 +6,8 @@ import { getAboutPage, getSiteSettings } from "@/lib/sanity/api";
 import { urlFor } from "@/lib/sanity/image";
 import { localizedPath } from "@/lib/locales";
 import { getLocaleOrDefault, isPreviewRequest, localeLinksForPath } from "@/lib/page-helpers";
+import { absoluteUrl } from "@/lib/seo";
+import { mapHtmlLang } from "@/lib/format";
 
 const rawLocale = Astro.params.locale;
 const locale = getLocaleOrDefault(rawLocale);
@@ -29,6 +31,43 @@ const introImage = about.introImage
 const services = Array.isArray(about.services) ? about.services : [];
 const timeline = Array.isArray(about.timeline) ? about.timeline : [];
 const galleryImages = Array.isArray(about.galleryImages) ? about.galleryImages : [];
+const canonicalPath = `/${locale}/about`;
+const canonicalUrl = absoluteUrl(canonicalPath, Astro.url, Astro.request.headers);
+const homeUrl = absoluteUrl(`/${locale}`, Astro.url, Astro.request.headers);
+const aboutStructuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "@id": `${canonicalUrl}#about`,
+    url: canonicalUrl,
+    name: `${settings.siteTitle} | About`,
+    description: about.introParagraphOne,
+    inLanguage: mapHtmlLang(locale),
+    about: {
+      "@type": "Person",
+      name: settings.siteTitle,
+      url: homeUrl,
+    },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: settings.siteTitle,
+        item: homeUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "About",
+        item: canonicalUrl,
+      },
+    ],
+  },
+];
 
 const gallery = galleryImages.length
   ? galleryImages.map((image) => ({
@@ -66,8 +105,9 @@ const iconMap: Record<string, string> = {
   localeLinks={localeLinks}
   title={`${settings.siteTitle} | About`}
   description={about.introParagraphOne}
-  canonicalPath={`/${locale}/about`}
+  canonicalPath={canonicalPath}
   isPreview={isPreview}
+  structuredData={aboutStructuredData}
 >
   <section class="sec-hero">
     <div class="container">

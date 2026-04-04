@@ -38,6 +38,7 @@ export const HOME_PAGE_QUERY = `
     "id": _id,
     locale,
     translationKey,
+    templateVariant,
     title,
     titleEmphasis,
     "slug": slug.current,
@@ -53,6 +54,7 @@ export const HOME_PAGE_QUERY = `
       order
     },
     publishedAt,
+    "updatedAt": _updatedAt,
     readTimeMinutes,
     featuredOnHome,
     featuredInArchive
@@ -61,6 +63,7 @@ export const HOME_PAGE_QUERY = `
     "id": _id,
     locale,
     translationKey,
+    templateVariant,
     title,
     titleEmphasis,
     "slug": slug.current,
@@ -76,6 +79,7 @@ export const HOME_PAGE_QUERY = `
       order
     },
     publishedAt,
+    "updatedAt": _updatedAt,
     readTimeMinutes,
     featuredOnHome,
     featuredInArchive
@@ -84,6 +88,7 @@ export const HOME_PAGE_QUERY = `
     "id": _id,
     locale,
     translationKey,
+    templateVariant,
     title,
     titleEmphasis,
     "slug": slug.current,
@@ -99,6 +104,7 @@ export const HOME_PAGE_QUERY = `
       order
     },
     publishedAt,
+    "updatedAt": _updatedAt,
     readTimeMinutes,
     featuredOnHome,
     featuredInArchive
@@ -172,6 +178,7 @@ export const POSTS_QUERY = `
   "id": _id,
   locale,
   translationKey,
+  templateVariant,
   title,
   titleEmphasis,
   "slug": slug.current,
@@ -187,6 +194,7 @@ export const POSTS_QUERY = `
     order
   },
   publishedAt,
+  "updatedAt": _updatedAt,
   readTimeMinutes,
   featuredOnHome,
   featuredInArchive
@@ -197,6 +205,7 @@ export const POST_BY_SLUG_QUERY = `
   "id": _id,
   locale,
   translationKey,
+  templateVariant,
   title,
   titleEmphasis,
   "slug": slug.current,
@@ -212,10 +221,31 @@ export const POST_BY_SLUG_QUERY = `
     order
   },
   publishedAt,
+  "updatedAt": _updatedAt,
   readTimeMinutes,
   featuredOnHome,
   featuredInArchive,
-  body,
+  flagshipHeroMode,
+  body[]{
+    ...,
+    _type == "diagramEmbed" => {
+      _type,
+      _key,
+      diagramKey,
+      label,
+      caption
+    }
+  },
+  editorialPlan{
+    clusterRole,
+    mustLinkTo,
+    internalLinkPlan[]{
+      target,
+      kind,
+      purpose,
+      anchorHint
+    }
+  },
   seoTitle,
   seoDescription,
   seoImage,

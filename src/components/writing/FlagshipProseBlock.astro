@@ -1,0 +1,22 @@
+---
+import type { BlockProps } from "astro-portabletext/types";
+
+interface Props extends BlockProps {}
+
+const { node, index } = Astro.props;
+const text = (node.children || []).map((child) => ("text" in child ? child.text : "")).join("").trim();
+const nonWhitespace = (node.children || []).filter((child) => "text" in child && child.text.trim().length > 0);
+const isFullyEmphasized = nonWhitespace.length > 0 && nonWhitespace.every((child) => Array.isArray(child.marks) && child.marks.includes("em"));
+const isLead = index === 0;
+const isInlineSummary = isFullyEmphasized && text.length > 0 && text.length <= 96 && !isLead;
+---
+
+<p
+  class:list={[
+    "flagship-prose",
+    isLead && "flagship-prose--lead",
+    isInlineSummary && "flagship-prose--summary",
+  ]}
+>
+  <slot />
+</p>

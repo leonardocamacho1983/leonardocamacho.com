@@ -8,6 +8,7 @@
   },
   "exclude": [
     "dist",
+    "studio-standalone",
     ".vercel",
     "node_modules",
     "src/app",

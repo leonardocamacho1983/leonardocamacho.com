@@ -1,0 +1,14 @@
+{"timestamp":"2026-03-01T10:00:00.000Z","event":"launch_view","distinct_id":"u1","properties":{"locale":"en-us","path":"/en-us","surface_type":"launch"}}
+{"timestamp":"2026-03-01T10:01:00.000Z","event":"home_subscribe_submit_clicked","distinct_id":"u1","properties":{"locale":"en-us","path":"/en-us","surface_type":"home","source":"home"}}
+{"timestamp":"2026-03-01T10:01:08.000Z","event":"newsletter_subscribe_success","distinct_id":"u1","properties":{"locale":"en-us","path":"/en-us","surface_type":"home","source":"home"}}
+{"timestamp":"2026-03-01T10:03:00.000Z","event":"welcome_view","distinct_id":"u1","properties":{"locale":"en-us","path":"/welcome","surface_type":"welcome"}}
+{"timestamp":"2026-03-01T10:05:00.000Z","event":"confirmed_view","distinct_id":"u1","properties":{"locale":"en-us","path":"/confirmed","surface_type":"confirmed"}}
+{"timestamp":"2026-03-01T10:20:00.000Z","event":"article_engaged_read","distinct_id":"u1","properties":{"locale":"en-us","path":"/en-us/writing/approval-delay-trap","surface_type":"article","post_slug":"approval-delay-trap"}}
+{"timestamp":"2026-03-06T09:45:00.000Z","event":"$pageview","distinct_id":"u1","properties":{"locale":"en-us","path":"/en-us/writing/approval-delay-trap","surface_type":"article","post_slug":"approval-delay-trap"}}
+{"timestamp":"2026-03-01T11:00:00.000Z","event":"launch_view","distinct_id":"u2","properties":{"locale":"en-us","path":"/en-us","surface_type":"launch"}}
+{"timestamp":"2026-03-01T11:01:00.000Z","event":"home_subscribe_submit_clicked","distinct_id":"u2","properties":{"locale":"en-us","path":"/en-us","surface_type":"home","source":"home"}}
+{"timestamp":"2026-03-01T11:01:05.000Z","event":"newsletter_subscribe_failed","distinct_id":"u2","properties":{"locale":"en-us","path":"/en-us","surface_type":"home","source":"home","reason":"http_500"}}
+{"timestamp":"2026-03-01T11:02:00.000Z","event":"welcome_view","distinct_id":"u2","properties":{"locale":"en-us","path":"/welcome","surface_type":"welcome"}}
+{"timestamp":"2026-03-01T12:00:00.000Z","event":"launch_view","distinct_id":"u3","properties":{"locale":"en-us","path":"/en-us","surface_type":"launch"}}
+{"timestamp":"2026-03-01T12:05:00.000Z","event":"$pageview","distinct_id":"u3","properties":{"locale":"en-us","path":"/en-us/writing/strategy-signals","surface_type":"article","post_slug":"strategy-signals"}}
+{"timestamp":"2026-03-01T12:06:00.000Z","event":"article_engaged_read","distinct_id":"u3","properties":{"locale":"en-us","path":"/en-us/writing/strategy-signals","surface_type":"article","post_slug":"strategy-signals"}}

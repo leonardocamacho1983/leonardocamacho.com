@@ -1,0 +1,831 @@
+---
+export const prerender = false;
+
+import { PortableText } from "astro-portabletext";
+import LanguageSwitcher from "@/components/launch/LanguageSwitcher.astro";
+import FlagshipDiagramBlock from "@/components/writing/FlagshipDiagramBlock.astro";
+import FlagshipEpigraph from "@/components/writing/FlagshipEpigraph.astro";
+import FlagshipHeadingBlock from "@/components/writing/FlagshipHeadingBlock.astro";
+import FlagshipProseBlock from "@/components/writing/FlagshipProseBlock.astro";
+import FlagshipPullQuote from "@/components/writing/FlagshipPullQuote.astro";
+import FlowLayout from "@/layouts/FlowLayout.astro";
+import { transformFlagshipBody } from "@/lib/flagship-body";
+import { formatReadTime, mapHtmlLang } from "@/lib/format";
+import { LOCALES, type LocaleKey } from "@/lib/locales";
+import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
+import { getPostBySlug, getPosts, getSiteSettings } from "@/lib/sanity/api";
+import { urlFor } from "@/lib/sanity/image";
+
+const rawLocale = Astro.params.locale;
+const locale = getLocaleOrDefault(rawLocale);
+const slug = Astro.params.slug || "";
+if (!rawLocale || rawLocale.toLowerCase() !== locale) {
+  return Astro.redirect("/en-us/launch/archive", 302);
+}
+
+const isPreview = isPreviewRequest(Astro.cookies);
+const [settings, post, posts] = await Promise.all([
+  getSiteSettings(locale, isPreview),
+  getPostBySlug(locale, slug, isPreview),
+  getPosts(locale, isPreview),
+]);
+
+if (!post) {
+  return Astro.redirect(`/${locale}/launch/archive`, 302);
+}
+
+const launchArchivePath = `/${locale}/launch/archive`;
+const canonicalPath = `/${locale}/writing/${post.slug}`;
+const localeOptions = LOCALES.map((item) => ({ key: item.key, label: item.label, flag: item.flag }));
+const alternateLinks = (post.translations || [])
+  .filter((item): item is { locale: LocaleKey; slug: string } => Boolean(item.locale && item.slug))
+  .map((item) => ({ hrefLang: mapHtmlLang(item.locale), href: `/${item.locale}/launch/archive/${item.slug}` }));
+const localeHrefMap = Object.fromEntries(
+  (post.translations || [])
+    .filter((item): item is { locale: LocaleKey; slug: string } => Boolean(item.locale && item.slug))
+    .map((item) => [item.locale, `/${item.locale}/launch/archive/${item.slug}`]),
+) as Partial<Record<LocaleKey, string>>;
+localeHrefMap[locale] = `/${locale}/launch/archive/${post.slug}`;
+const xDefaultHref = `/en-us/launch/archive/${post.translations?.find((item) => item.locale === "en-us")?.slug || post.slug}`;
+const description = post.excerpt;
+const heroImage = post.coverImage
+  ? urlFor(post.coverImage).width(1600).height(860).fit("crop").auto("format").url()
+  : "";
+const coverImageAlt =
+  post.coverImage && typeof post.coverImage === "object" && "alt" in post.coverImage && typeof post.coverImage.alt === "string"
+    ? post.coverImage.alt
+    : `${post.title}${post.titleEmphasis ? ` ${post.titleEmphasis}` : ""}`;
+const headline = `${post.title}${post.titleEmphasis ? ` ${post.titleEmphasis}` : ""}`.trim();
+const isFlagship = post.templateVariant === "flagship" || post.translationKey === "managerial-plasticity";
+const articleDate = (() => {
+  try {
+    return new Intl.DateTimeFormat(mapHtmlLang(locale), {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }).format(new Date(post.publishedAt));
+  } catch {
+    return post.publishedAt;
+  }
+})();
+const launchFootnote = locale.startsWith("pt-")
+  ? "Esta e a versao de lancamento do site. A versao final incluira multimidia e ferramentas mais aprofundadas."
+  : locale.startsWith("fr-")
+    ? "Ceci est la version de lancement du site. La version finale inclura du multimedia et des outils plus approfondis."
+    : "This is the launch version of the website. The finished version will include multimedia and more in-depth tools.";
+const nextPosts = posts.filter((item) => item.slug !== post.slug).slice(0, 2);
+
+const flagshipBody = transformFlagshipBody(post.body || [], locale);
+const flagshipComponents = {
+  block: {
+    normal: FlagshipProseBlock,
+    h2: FlagshipHeadingBlock,
+    h3: FlagshipHeadingBlock,
+    blockquote: FlagshipPullQuote,
+  },
+  type: {
+    diagramEmbed: FlagshipDiagramBlock,
+    pullQuote: FlagshipPullQuote,
+    epigraph: FlagshipEpigraph,
+  },
+};
+---
+
+<FlowLayout
+  title={`${headline} — Launch Archive`}
+  description={description}
+  lang={mapHtmlLang(locale)}
+  locale={locale}
+  robots="noindex,follow"
+  canonicalPath={canonicalPath}
+  alternateLinks={alternateLinks}
+  xDefaultHref={xDefaultHref}
+>
+  <div class="launch-global-lang launch-article__lang">
+    <LanguageSwitcher
+      locale={locale}
+      localeOptions={localeOptions}
+      localeHrefMap={localeHrefMap}
+      tone="light"
+    />
+  </div>
+
+  <main class="launch-article" data-launch-article data-post-slug={post.slug} data-translation-key={post.translationKey}>
+    {isFlagship ? (
+      <article class="launch-article__flagship flagship-essay" data-flagship-root>
+        <div class="flagship-progress" data-flagship-progress></div>
+
+        <nav class="flagship-nav" data-flagship-nav aria-label="Launch article navigation">
+          <a class="flagship-nav__back flagship-nav__back--home" href={`/${locale}/launch`}>
+            <span>{settings.siteTitle}</span>
+          </a>
+          <div class="flagship-nav__title">{headline}</div>
+          <a class="flagship-nav__share flagship-nav__share--archive" href={launchArchivePath}>
+            <span>Back to Archive</span>
+          </a>
+        </nav>
+
+        <section class="flagship-hero">
+          {heroImage ? (
+            <img class="flagship-hero__image" src={heroImage} alt={coverImageAlt} loading="eager" width="1600" height="860" />
+          ) : (
+            <div class="flagship-hero__fallback">
+              <span>{headline}</span>
+            </div>
+          )}
+          <div class="flagship-hero__dissolve"></div>
+          <div class="flagship-hero__nudge" aria-hidden="true">
+            <div class="flagship-hero__nudge-icon">
+              <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
+                <path d="M9 1v16M2 11l7 7 7-7" stroke="rgba(246,243,236,0.55)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+        </section>
+
+        <header class="flagship-header">
+          <div class="flagship-header__eyebrow">{post.category?.title || "Essay"} &ensp;·&ensp; {articleDate} &ensp;·&ensp; {formatReadTime(post.readTimeMinutes)} read</div>
+          <h1 class="flagship-header__title">
+            {post.title}
+            {post.titleEmphasis ? <><br /><em>{post.titleEmphasis}</em></> : null}
+          </h1>
+          <p class="flagship-header__byline">By Leonardo Camacho</p>
+          <div class="flagship-header__bar"></div>
+        </header>
+
+        <article class="flagship-body launch-article__body--flagship">
+          <PortableText value={flagshipBody as never} components={flagshipComponents} />
+        </article>
+      </article>
+    ) : (
+      <>
+        <header class="launch-article__top">
+          <a class="launch-article__eyebrow" href={`/${locale}/launch`}>{settings.siteTitle}</a>
+          <div class="launch-article__actions">
+            <a href={launchArchivePath}>← Back to Archive</a>
+          </div>
+        </header>
+
+      <article class="launch-article__standard">
+        {heroImage ? (
+          <div class="launch-article__hero launch-article__hero--standard">
+            <img src={heroImage} alt={coverImageAlt} loading="eager" width="1600" height="860" />
+          </div>
+        ) : null}
+        <header class="launch-article__standard-header">
+          <p class="launch-article__meta">{post.category?.title || "Essay"} &ensp;·&ensp; {articleDate} &ensp;·&ensp; {formatReadTime(post.readTimeMinutes)}</p>
+          <h1>{headline}</h1>
+          <p class="launch-article__excerpt">{post.excerpt}</p>
+        </header>
+        <section class="launch-article__body launch-article__body--standard">
+          <PortableText value={post.body as never} />
+        </section>
+      </article>
+      </>
+    )}
+
+    {nextPosts.length > 0 ? (
+      <aside class="launch-article__continue">
+        <h2>Continue reading</h2>
+        <div class="launch-article__continue-grid">
+          {nextPosts.map((item) => (
+            <a href={`/${locale}/launch/archive/${item.slug}`}>
+              <span>{item.category?.title || "Editorial"}</span>
+              <strong>{item.title}{item.titleEmphasis ? ` ${item.titleEmphasis}` : ""}</strong>
+              <em>{formatReadTime(item.readTimeMinutes)}</em>
+            </a>
+          ))}
+        </div>
+      </aside>
+    ) : null}
+
+    <section class="launch-article__footer-note">
+      <p>{launchFootnote}</p>
+    </section>
+  </main>
+
+  <script>
+    const root = document.querySelector('[data-launch-article]');
+    if (root instanceof HTMLElement && typeof window.lcTrack === 'function') {
+      window.lcTrack('launch_article_view', {
+        surface_type: 'launch_article',
+        post_slug: root.dataset.postSlug || '',
+        translation_key: root.dataset.translationKey || '',
+        path: window.location.pathname,
+      });
+    }
+
+    const flagshipRoot = document.querySelector('[data-flagship-root]');
+    if (flagshipRoot instanceof HTMLElement) {
+      const progressBar = document.querySelector('[data-flagship-progress]');
+      const stickyNav = document.querySelector('[data-flagship-nav]');
+
+      const onScroll = () => {
+        const scrollingRoot = document.scrollingElement || document.documentElement;
+        const scrollTop = scrollingRoot.scrollTop;
+        const maxScrollable = Math.max(1, scrollingRoot.scrollHeight - window.innerHeight);
+        const depth = Math.max(0, Math.min(1, scrollTop / maxScrollable));
+        if (progressBar instanceof HTMLElement) {
+          progressBar.style.width = `${depth * 100}%`;
+        }
+        if (stickyNav instanceof HTMLElement) {
+          stickyNav.dataset.visible = scrollTop > 90 ? 'true' : 'false';
+        }
+      };
+
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+    }
+  </script>
+
+  <style>
+    .launch-global-lang.launch-article__lang {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 12px);
+      right: calc(env(safe-area-inset-right, 0px) + 12px);
+      z-index: 60;
+    }
+
+    .flagship-essay {
+      background: #f6f3ec;
+      min-height: 100vh;
+      color: #1a1710;
+    }
+
+    .flagship-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: #6e2535;
+      z-index: 120;
+      transition: width 0.06s linear;
+      pointer-events: none;
+    }
+
+    .flagship-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 90;
+      height: 52px;
+      padding: 0 clamp(20px, 3vw, 40px);
+      display: grid;
+      grid-template-columns: 1fr minmax(0, 38%) 1fr;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid #d8d2c8;
+      background: rgba(246, 243, 236, 0.94);
+      backdrop-filter: blur(8px);
+      transform: translateY(-60px);
+      opacity: 0;
+      transition: transform 0.28s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.28s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    .flagship-nav[data-visible='true'] {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .flagship-nav__back,
+    .flagship-nav__share {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: #6e6a63;
+      text-decoration: none;
+      transition: color 0.2s ease;
+      width: fit-content;
+    }
+
+    .flagship-nav__back:hover,
+    .flagship-nav__back:focus-visible,
+    .flagship-nav__share:hover,
+    .flagship-nav__share:focus-visible {
+      color: #6e2535;
+    }
+
+    .flagship-nav__share {
+      justify-self: end;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .flagship-nav__back--home {
+      font-size: 10px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+    }
+
+    .flagship-nav__title {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-style: italic;
+      color: #1a1710;
+      opacity: 0.72;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+
+    .flagship-hero {
+      position: relative;
+      width: 100%;
+      height: clamp(54vh, 72vh, 82vh);
+      overflow: hidden;
+      background: #140f0c;
+    }
+
+    .flagship-hero__image,
+    .flagship-hero__fallback {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .flagship-hero__image {
+      object-fit: cover;
+      object-position: center center;
+    }
+
+    .flagship-hero__fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(34px, 5vw, 66px);
+      color: #f6f3ec;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .flagship-hero__dissolve {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 28%, rgba(246,243,236,0.14) 52%, rgba(246,243,236,0.72) 76%, #F6F3EC 100%);
+      pointer-events: none;
+    }
+
+    .flagship-hero__nudge {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      opacity: 0;
+      animation: flagshipNudgeFade 0.7s ease 1.4s forwards;
+    }
+
+    .flagship-hero__nudge-icon {
+      animation: flagshipNudgeMove 1.8s ease-in-out infinite;
+    }
+
+    .flagship-header {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: clamp(12px, 2vh, 24px) clamp(24px, 5vw, 64px) 0;
+      text-align: center;
+    }
+
+    .flagship-header__eyebrow {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: #6e6a63;
+      margin-bottom: clamp(18px, 2.6vh, 30px);
+    }
+
+    .flagship-header__title {
+      margin: 0 0 clamp(20px, 2.8vh, 34px);
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(42px, 6.5vw, 82px);
+      font-weight: 400;
+      line-height: 1.03;
+      letter-spacing: -0.028em;
+      color: #1a1710;
+    }
+
+    .flagship-header__title em {
+      color: #6e2535;
+      font-style: italic;
+    }
+
+    .flagship-header__byline {
+      margin: 0 0 clamp(36px, 4.8vh, 60px);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      color: #6e6a63;
+    }
+
+    .flagship-header__bar {
+      width: 36px;
+      height: 2px;
+      margin: 0 auto clamp(48px, 6vh, 80px);
+      background: #6e2535;
+    }
+
+    .launch-article {
+      position: relative;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 0 56px;
+      color: #1a1710;
+    }
+
+    .launch-article__top {
+      position: absolute;
+      top: 28px;
+      left: 50%;
+      z-index: 8;
+      width: min(1120px, calc(100vw - 48px));
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      padding-right: 120px;
+    }
+
+    .launch-article__eyebrow {
+      display: inline-block;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(246, 243, 236, 0.82);
+      text-decoration: none;
+    }
+
+    .launch-article__actions {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .launch-article__actions a {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(246, 243, 236, 0.82);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(246, 243, 236, 0.32);
+      padding-bottom: 2px;
+    }
+
+    .launch-article__standard {
+      display: grid;
+      gap: 28px;
+    }
+
+    .launch-article__hero {
+      position: relative;
+      overflow: hidden;
+      background: #1a1710;
+    }
+
+    .launch-article__hero img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+    }
+
+    .launch-article__hero--standard {
+      min-height: 420px;
+      border: 1px solid #d8d2c8;
+    }
+
+    .launch-article__standard-header {
+      max-width: 820px;
+      margin: 0 auto;
+      text-align: center;
+      padding: clamp(12px, 2vh, 24px) 16px 0;
+    }
+
+    .launch-article__meta {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: #6e6a63;
+      margin-bottom: clamp(18px, 2.6vh, 30px);
+    }
+
+    .launch-article__standard-header h1 {
+      margin: 0 0 clamp(20px, 2.8vh, 34px);
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(42px, 6.5vw, 82px);
+      font-weight: 400;
+      line-height: 1.03;
+      letter-spacing: -0.028em;
+    }
+
+    .launch-article__excerpt {
+      margin: 0;
+      font-family: 'DM Sans', sans-serif;
+      font-size: clamp(17px, 2vw, 20px);
+      line-height: 1.7;
+      color: #4a4740;
+    }
+
+    .launch-article__body--flagship {
+      max-width: 920px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 0 16px;
+    }
+
+    .launch-article__body--flagship :global(.flagship-prose),
+    .launch-article__body--flagship :global(.flagship-heading),
+    .launch-article__body--flagship :global(.flagship-pull-quote),
+    .launch-article__body--flagship :global(.flagship-epigraph) {
+      max-width: 692px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .launch-article__body--flagship :global(.flagship-prose) {
+      margin-top: 0;
+      margin-bottom: clamp(24px, 2.8vh, 34px);
+      font-family: 'DM Sans', sans-serif;
+      font-size: clamp(17px, 1.22vw, 19.5px);
+      line-height: 1.88;
+      color: #4a4740;
+    }
+
+    .launch-article__body--flagship :global(.flagship-prose--lead:first-letter) {
+      float: left;
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(74px, 7.8vw, 100px);
+      font-weight: 700;
+      line-height: 0.76;
+      color: #6e2535;
+      margin-right: 0.07em;
+      padding-top: 0.1em;
+    }
+
+    .launch-article__body--flagship :global(.flagship-prose--summary) {
+      color: #4a4740;
+      font-style: italic;
+    }
+
+    .launch-article__body--flagship :global(.flagship-heading) {
+      margin-top: clamp(52px, 6vh, 76px);
+      margin-bottom: clamp(18px, 2.2vh, 26px);
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 2.8vw, 36px);
+      font-weight: 400;
+      line-height: 1.16;
+      color: #1a1710;
+    }
+
+    .launch-article__body--flagship :global(.flagship-pull-quote) {
+      margin-top: clamp(44px, 5vh, 64px);
+      margin-bottom: clamp(44px, 5vh, 64px);
+      padding-left: clamp(22px, 2.2vw, 30px);
+      border-left: 3px solid #6e2535;
+    }
+
+    .launch-article__body--flagship :global(.flagship-pull-quote p) {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(20px, 1.7vw, 24px);
+      font-style: italic;
+      line-height: 1.62;
+      color: #1a1710;
+    }
+
+    .launch-article__body--flagship :global(.flagship-diagram) {
+      margin: clamp(56px, 6.4vh, 86px) 0;
+    }
+
+    .launch-article__body--flagship :global(.flagship-diagram__frame) {
+      border: 1px solid #d8d2c8;
+      background: #f0ede5;
+      padding: clamp(20px, 3vw, 32px);
+    }
+
+    .launch-article__body--flagship :global(.flagship-diagram__frame--placeholder) {
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .launch-article__body--flagship :global(.flagship-diagram__placeholder) {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      color: #6e6a63;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .launch-article__body--flagship :global(.flagship-diagram__placeholder span) {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #6e2535;
+    }
+
+    .launch-article__body--flagship :global(.flagship-diagram__placeholder strong) {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .launch-article__body--flagship :global(.flagship-diagram__svg svg) {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .launch-article__body--flagship :global(.flagship-diagram__caption) {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      line-height: 1.72;
+      color: #4a4740;
+    }
+
+    .launch-article__body--flagship :global(.flagship-diagram__label) {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #6e2535;
+    }
+
+    .launch-article__body--flagship :global(.flagship-epigraph) {
+      padding-top: clamp(64px, 7vh, 104px);
+      padding-bottom: clamp(24px, 3vh, 40px);
+    }
+
+    .launch-article__body--flagship :global(.flagship-epigraph__rule) {
+      width: 32px;
+      height: 1px;
+      background: #d8d2c8;
+      margin-bottom: clamp(28px, 3.5vh, 44px);
+    }
+
+    .launch-article__body--flagship :global(.flagship-epigraph p) {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(15px, 1.15vw, 17px);
+      font-style: italic;
+      line-height: 1.7;
+      color: #6e6a63;
+    }
+
+    .launch-article__body--flagship :global(a),
+    .launch-article__body--standard :global(a) {
+      color: #1a1710;
+      text-underline-offset: 3px;
+      text-decoration-color: #d8d2c8;
+      text-decoration-thickness: 1px;
+    }
+
+    .launch-article__body--standard {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px;
+      background: #f0ede5;
+      border: 1px solid #d8d2c8;
+    }
+
+    .launch-article__body--standard :global(p),
+    .launch-article__body--standard :global(li) {
+      font-family: 'DM Sans', sans-serif;
+      color: #4a4740;
+      line-height: 1.78;
+      font-size: 16px;
+      margin: 0 0 20px;
+    }
+
+    .launch-article__body--standard :global(h2),
+    .launch-article__body--standard :global(h3) {
+      margin: 32px 0 14px;
+      font-family: 'Playfair Display', serif;
+      font-weight: 400;
+      color: #1a1710;
+    }
+
+    .launch-article__continue {
+      margin-top: 44px;
+      padding-top: 28px;
+      border-top: 1px solid #d8d2c8;
+    }
+
+    .launch-article__continue h2 {
+      margin: 0 0 18px;
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 400;
+    }
+
+    .launch-article__continue-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .launch-article__continue-grid a {
+      display: grid;
+      gap: 8px;
+      padding: 18px;
+      border: 1px solid #d8d2c8;
+      background: #f0ede5;
+      text-decoration: none;
+      color: #1a1710;
+    }
+
+    .launch-article__continue-grid span,
+    .launch-article__continue-grid em {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #6e6a63;
+      font-style: normal;
+    }
+
+    .launch-article__continue-grid strong {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 1.15;
+    }
+
+    .launch-article__footer-note {
+      margin-top: 24px;
+    }
+
+    .launch-article__footer-note p {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #8a857d;
+    }
+
+    @media (max-width: 900px) {
+      .launch-article {
+        width: 100%;
+      }
+
+      .launch-article__top {
+        top: 22px;
+        width: calc(100vw - 24px);
+        padding-right: 92px;
+      }
+
+      .flagship-nav {
+        grid-template-columns: 1fr auto;
+        height: auto;
+        min-height: 52px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+
+      .flagship-nav__title {
+        grid-column: 1 / -1;
+        order: 3;
+        width: 100%;
+      }
+
+      .launch-article__continue-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @keyframes flagshipNudgeFade {
+      from { opacity: 0; transform: translate(-50%, 6px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    @keyframes flagshipNudgeMove {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
+    }
+  </style>
+</FlowLayout>

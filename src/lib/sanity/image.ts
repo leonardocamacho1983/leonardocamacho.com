@@ -1,8 +1,7 @@
-import imageUrlBuilder from "@sanity/image-url";
-import type { ImageUrlBuilder } from "@sanity/image-url/lib/types/builder";
+import { createImageUrlBuilder, type ImageUrlBuilder } from "@sanity/image-url";
 import { sanityEnvironment } from "./client";
 
-const builder = imageUrlBuilder({
+const builder = createImageUrlBuilder({
   projectId: sanityEnvironment.projectId || "demo1234",
   dataset: sanityEnvironment.dataset || "production",
 });

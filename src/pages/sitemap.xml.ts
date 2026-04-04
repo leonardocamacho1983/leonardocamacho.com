@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { LOCALES } from "../lib/locales";
 import { getPosts } from "../lib/sanity/api";
+import { absoluteUrl } from "../lib/seo";
 
 interface SitemapEntry {
   loc: string;
@@ -17,51 +18,12 @@ const escapeXml = (value: string) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;");
 
-const normalizeOrigin = (value: string) => value.replace(/\/+$/, "");
-
-const getRequestOrigin = (request: Request, requestUrl: URL) => {
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = forwardedHost || request.headers.get("host")?.split(",")[0]?.trim();
-  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-
-  if (host) {
-    const protocol = forwardedProto || requestUrl.protocol.replace(":", "") || "https";
-    return normalizeOrigin(`${protocol}://${host}`);
-  }
-
-  return normalizeOrigin(requestUrl.origin);
-};
-
-const getOrigin = (request: Request, requestUrl: URL) => {
-  const configured = (import.meta.env.PUBLIC_SITE_URL || "").trim();
-  if (!configured) {
-    return getRequestOrigin(request, requestUrl);
-  }
-
-  try {
-    const parsed = new URL(configured);
-    if (
-      parsed.hostname === "localhost" ||
-      parsed.hostname === "127.0.0.1" ||
-      parsed.hostname === "::1"
-    ) {
-      return getRequestOrigin(request, requestUrl);
-    }
-    return normalizeOrigin(parsed.origin);
-  } catch {
-    return getRequestOrigin(request, requestUrl);
-  }
-};
-
-const absoluteUrl = (origin: string, path: string) => `${origin}${path.startsWith("/") ? path : `/${path}`}`;
-
 const validIsoDate = (value: string) => {
   const parsed = new Date(value);
   return Number.isNaN(parsed.valueOf()) ? undefined : parsed.toISOString();
 };
 
 export const GET: APIRoute = async ({ request, url }) => {
-  const origin = getOrigin(request, url);
   const entries = new Map<string, SitemapEntry>();
 
   const localePaths = LOCALES.flatMap(({ key }) => [
@@ -72,7 +34,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   ]);
 
   for (const path of [...localePaths, ...WELCOME_PATHS]) {
-    const loc = absoluteUrl(origin, path);
+    const loc = absoluteUrl(path, url, request.headers);
     entries.set(loc, { loc });
   }
 
@@ -80,7 +42,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     LOCALES.map(async ({ key }) => {
       const posts = await getPosts(key, false);
       return posts.map((post) => {
-        const loc = absoluteUrl(origin, `/${key}/writing/${post.slug}`);
+        const loc = absoluteUrl(`/${key}/writing/${post.slug}`, url, request.headers);
         return {
           loc,
           lastmod: validIsoDate(post.publishedAt),

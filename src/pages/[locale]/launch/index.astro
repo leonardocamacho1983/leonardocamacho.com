@@ -1,0 +1,434 @@
+---
+export const prerender = false;
+
+import { getLaunchHomeCopy } from "@/components/launch/copy";
+import LanguageSwitcher from "@/components/launch/LanguageSwitcher.astro";
+import type { LaunchVariant } from "@/components/launch/types";
+import V1 from "@/components/launch/variants/V1.astro";
+import V2 from "@/components/launch/variants/V2.astro";
+import V3 from "@/components/launch/variants/V3.astro";
+import FlowLayout from "@/layouts/FlowLayout.astro";
+import { mapHtmlLang } from "@/lib/format";
+import { getLaunchPosts } from "@/lib/launch-posts";
+import { LOCALES } from "@/lib/locales";
+import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
+import { getPosts, getSiteSettings } from "@/lib/sanity/api";
+import { urlFor } from "@/lib/sanity/image";
+
+const rawLocale = Astro.params.locale;
+const locale = getLocaleOrDefault(rawLocale);
+if (!rawLocale || rawLocale.toLowerCase() !== locale) {
+  return Astro.redirect("/en-us/launch", 302);
+}
+
+const isPreview = isPreviewRequest(Astro.cookies);
+const [settings, posts] = await Promise.all([getSiteSettings(locale, isPreview), getPosts(locale, isPreview)]);
+
+const launchPosts = getLaunchPosts(posts);
+const featured = launchPosts[0] || null;
+const coverlines = launchPosts.slice(1, 4);
+
+const fallbackCoverBySlug: Record<string, string> = {
+  "architecture-durable-companies":
+    "https://images.unsplash.com/photo-1612572357378-f8da682e6e3a?auto=format&fit=crop&w=1400&q=80",
+  "patterns-founders-lose-clarity":
+    "https://images.unsplash.com/photo-1702893752663-bf8054648f42?auto=format&fit=crop&w=1200&q=80",
+  "framework-organizational-adaptability":
+    "https://images.unsplash.com/photo-1758055660837-6889c3cb3898?auto=format&fit=crop&w=1200&q=80",
+};
+const fallbackCoverDefault =
+  "https://images.unsplash.com/photo-1581682101370-fafc58e0f387?auto=format&fit=crop&w=1600&q=80";
+
+const imageForPost = (): string => {
+  if (!featured) return fallbackCoverDefault;
+  if (featured.coverImage) {
+    return urlFor(featured.coverImage).width(1800).height(1300).fit("crop").auto("format").url();
+  }
+  return fallbackCoverBySlug[featured.slug] || fallbackCoverDefault;
+};
+
+const validVariants: LaunchVariant[] = ["v1", "v2", "v3"];
+const parseVariant = (value: string | null | undefined): LaunchVariant | null => {
+  if (!value) return null;
+  const normalized = value.toLowerCase();
+  return validVariants.includes(normalized as LaunchVariant) ? (normalized as LaunchVariant) : null;
+};
+
+const pickVariant = (): LaunchVariant => {
+  const roll = Math.random();
+  if (roll < 0.33) return "v1";
+  if (roll < 0.66) return "v2";
+  return "v3";
+};
+
+const variantParam = parseVariant(Astro.url.searchParams.get("v"));
+const variantCookie = parseVariant(Astro.cookies.get("exp_launch_home_variant")?.value);
+const variant = variantParam || variantCookie || pickVariant();
+
+if (!variantParam && !variantCookie) {
+  Astro.cookies.set("exp_launch_home_variant", variant, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+    sameSite: "lax",
+    secure: Astro.url.protocol === "https:",
+    httpOnly: false,
+  });
+}
+
+const localeLinkSuffix = variantParam ? `?v=${variant}` : "";
+
+const launchPath = `/${locale}/launch`;
+const archivePath = `/${locale}/launch/archive`;
+const homePath = `/${locale}`;
+const launchAlternates = LOCALES.map((item) => ({
+  hrefLang: mapHtmlLang(item.key),
+  href: `/${item.key}/launch`,
+}));
+
+const currentLocaleMeta = LOCALES.find((item) => item.key === locale) || LOCALES[0];
+const localeOptions = LOCALES.map((item) => ({ key: item.key, label: item.label, flag: item.flag }));
+const launchImage = imageForPost();
+const copy = getLaunchHomeCopy(locale);
+const description = copy.subtitle;
+---
+
+<FlowLayout
+  title={`${settings.siteTitle} — Launch`}
+  description={description}
+  lang={mapHtmlLang(locale)}
+  locale={locale}
+  robots="noindex,follow"
+  canonicalPath={`/${locale}`}
+  alternateLinks={launchAlternates}
+  xDefaultHref="/en-us/launch"
+>
+  {variant === "v1" ? (
+    <V1
+      locale={locale}
+      variant={variant}
+      featured={featured}
+      coverlines={coverlines}
+      launchPath={launchPath}
+      archivePath={archivePath}
+      homePath={homePath}
+      launchImage={launchImage}
+      currentLocaleMeta={currentLocaleMeta}
+      localeOptions={localeOptions}
+      localeLinkSuffix={localeLinkSuffix}
+      copy={copy}
+    />
+  ) : null}
+
+  {variant === "v2" ? (
+    <V2
+      locale={locale}
+      variant={variant}
+      featured={featured}
+      coverlines={coverlines}
+      launchPath={launchPath}
+      archivePath={archivePath}
+      homePath={homePath}
+      launchImage={launchImage}
+      currentLocaleMeta={currentLocaleMeta}
+      localeOptions={localeOptions}
+      localeLinkSuffix={localeLinkSuffix}
+      copy={copy}
+    />
+  ) : null}
+
+  {variant === "v3" ? (
+    <V3
+      locale={locale}
+      variant={variant}
+      featured={featured}
+      coverlines={coverlines}
+      launchPath={launchPath}
+      archivePath={archivePath}
+      homePath={homePath}
+      launchImage={launchImage}
+      currentLocaleMeta={currentLocaleMeta}
+      localeOptions={localeOptions}
+      localeLinkSuffix={localeLinkSuffix}
+      copy={copy}
+    />
+  ) : null}
+
+  <div class="launch-global-lang">
+    <LanguageSwitcher
+      locale={locale}
+      localeOptions={localeOptions}
+      localeLinkSuffix={localeLinkSuffix}
+      tone={variant === "v3" ? "dark" : "light"}
+    />
+  </div>
+
+  <script
+    is:inline
+    define:vars={{
+      variant,
+      locale,
+      invalidEmailMessage:
+        locale === "pt-br"
+          ? "Digite um e-mail válido e tente novamente."
+          : locale === "pt-pt"
+            ? "Introduza um e-mail válido e tente novamente."
+            : locale === "fr-fr"
+              ? "Saisissez une adresse e-mail valide et réessayez."
+              : "Enter a valid email and try again.",
+      genericErrorMessage:
+        locale === "pt-br"
+          ? "Algo deu errado. Tente novamente."
+          : locale === "pt-pt"
+            ? "Ocorreu um erro. Tente novamente."
+            : locale === "fr-fr"
+              ? "Une erreur s’est produite. Réessayez."
+              : "Something went wrong. Try again.",
+      timeoutErrorMessage:
+        locale === "pt-br"
+          ? "A solicitação demorou demais. Tente novamente."
+          : locale === "pt-pt"
+            ? "O pedido demorou demasiado tempo. Tente novamente."
+            : locale === "fr-fr"
+              ? "La requête a pris trop de temps. Réessayez."
+              : "The request took too long. Try again.",
+      previewProtectionMessage:
+        locale === "pt-br"
+          ? "Este preview da Vercel está protegendo o endpoint da newsletter. Para validar a conversão real, use produção ou um preview sem proteção."
+          : locale === "pt-pt"
+            ? "Este preview da Vercel está a proteger o endpoint da newsletter. Para validar a conversão real, use produção ou um preview sem proteção."
+            : locale === "fr-fr"
+              ? "Ce preview Vercel protège l’endpoint de newsletter. Pour valider la conversion réelle, utilisez la production ou un preview non protégé."
+              : "This Vercel preview is protecting the newsletter endpoint. To validate the real conversion flow, use production or an unprotected preview.",
+    }}
+  >
+    (() => {
+      const root = document.querySelector("[data-launch-home]");
+      if (!root) return;
+
+      const baseProps = {
+        surface_type: "launch_home",
+        variant,
+        locale,
+        path: window.location.pathname,
+      };
+
+      const track = (eventName, props = {}) => {
+        if (typeof window.lcTrack !== "function") return;
+        window.lcTrack(eventName, { ...baseProps, ...props });
+      };
+
+      track("launch_home_view");
+
+      const ensureErrorNode = (form) => {
+        let errorNode = form.parentElement?.querySelector("[data-launch-form-error]");
+        if (errorNode) return errorNode;
+
+        errorNode = document.createElement("p");
+        errorNode.setAttribute("data-launch-form-error", "true");
+        errorNode.style.margin = "10px 0 0";
+        errorNode.style.fontFamily = '"DM Sans", Arial, sans-serif';
+        errorNode.style.fontSize = "12px";
+        errorNode.style.lineHeight = "1.5";
+        errorNode.style.color = "#6E2535";
+        form.insertAdjacentElement("afterend", errorNode);
+        return errorNode;
+      };
+
+      const submitForms = Array.from(root.querySelectorAll("[data-launch-form]"));
+      submitForms.forEach((form) => {
+        if (!(form instanceof HTMLFormElement)) return;
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          track("launch_subscribe_submit");
+
+          const submitButton = form.querySelector('button[type="submit"]');
+          const emailInput = form.querySelector('input[type="email"]');
+          const errorNode = ensureErrorNode(form);
+          const originalButtonText =
+            submitButton instanceof HTMLButtonElement ? submitButton.textContent || "" : "";
+
+          if (errorNode) errorNode.textContent = "";
+
+          if (!(emailInput instanceof HTMLInputElement) || !emailInput.value.trim()) {
+            track("launch_subscribe_failed", { reason: "missing_email" });
+            if (errorNode) errorNode.textContent = invalidEmailMessage;
+            return;
+          }
+
+          if (submitButton instanceof HTMLButtonElement) {
+            submitButton.disabled = true;
+            submitButton.textContent = "...";
+          }
+
+          let timeoutId = 0;
+          try {
+            const controller = new AbortController();
+            timeoutId = window.setTimeout(() => controller.abort(), 8000);
+            const requestUrl = new URL(form.action, window.location.origin);
+            const bypassToken = window.location.search
+              ? new URLSearchParams(window.location.search).get("x-vercel-protection-bypass")
+              : "";
+            const bypassCookieFlag = window.location.search
+              ? new URLSearchParams(window.location.search).get("x-vercel-set-bypass-cookie")
+              : "";
+
+            if (bypassToken) {
+              requestUrl.searchParams.set("x-vercel-protection-bypass", bypassToken);
+              requestUrl.searchParams.set(
+                "x-vercel-set-bypass-cookie",
+                bypassCookieFlag || "true",
+              );
+            }
+
+            const formPayload = {
+              locale: String(new FormData(form).get("locale") || locale),
+              email: emailInput.value.trim(),
+              source: String(new FormData(form).get("source") || `launch_home_${variant}`),
+              variant: String(new FormData(form).get("variant") || variant),
+              path: String(new FormData(form).get("path") || window.location.pathname),
+            };
+
+            const response = await fetch(form.action, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json, text/plain, */*",
+              },
+              body: JSON.stringify(formPayload),
+              credentials: "same-origin",
+              redirect: "follow",
+              signal: controller.signal,
+            });
+            window.clearTimeout(timeoutId);
+
+            if (bypassToken && response.status === 401) {
+              const retryResponse = await fetch(requestUrl.toString(), {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Accept: "application/json, text/plain, */*",
+                },
+                body: JSON.stringify(formPayload),
+                credentials: "same-origin",
+                redirect: "follow",
+                signal: controller.signal,
+              });
+              window.clearTimeout(timeoutId);
+
+              if (!retryResponse.ok) {
+                track("launch_subscribe_failed", {
+                  reason: "http_error",
+                  status: retryResponse.status,
+                });
+                if (retryResponse.status === 401 || retryResponse.status === 403) {
+                  if (errorNode) errorNode.textContent = previewProtectionMessage;
+                } else {
+                  if (errorNode) errorNode.textContent = genericErrorMessage;
+                }
+                return;
+              }
+
+              const retryFinalUrl = retryResponse.url || "";
+              const retryFinalStatus = retryFinalUrl
+                ? new URL(retryFinalUrl, window.location.origin).searchParams.get("status") || ""
+                : "";
+
+              if (retryFinalStatus === "subscribed") {
+                track("launch_subscribe_success");
+              } else {
+                track("launch_subscribe_failed", {
+                  reason: retryFinalStatus || "unexpected_status",
+                });
+              }
+
+              if (retryFinalUrl) {
+                window.location.href = retryFinalUrl;
+                return;
+              }
+
+              window.location.href = `/${locale}/launch/thanks`;
+              return;
+            }
+
+            if (!response.ok) {
+              track("launch_subscribe_failed", {
+                reason: "http_error",
+                status: response.status,
+              });
+              if (response.status === 401 || response.status === 403) {
+                if (errorNode) errorNode.textContent = previewProtectionMessage;
+              } else {
+                if (errorNode) errorNode.textContent = genericErrorMessage;
+              }
+              return;
+            }
+
+            const finalUrl = response.url || "";
+            const finalStatus = finalUrl
+              ? new URL(finalUrl, window.location.origin).searchParams.get("status") || ""
+              : "";
+
+            if (finalStatus === "subscribed") {
+              track("launch_subscribe_success");
+            } else {
+              track("launch_subscribe_failed", {
+                reason: finalStatus || "unexpected_status",
+              });
+            }
+
+            if (finalUrl) {
+              window.location.href = finalUrl;
+              return;
+            }
+
+            window.location.href = `/${locale}/launch/thanks`;
+          } catch (error) {
+            const reason = error instanceof DOMException && error.name === "AbortError"
+              ? "timeout"
+              : "network_error";
+            track("launch_subscribe_failed", { reason });
+            if (errorNode) {
+              errorNode.textContent =
+                reason === "timeout" ? timeoutErrorMessage : genericErrorMessage;
+            }
+          } finally {
+            if (timeoutId) window.clearTimeout(timeoutId);
+            if (submitButton instanceof HTMLButtonElement) {
+              submitButton.disabled = false;
+              submitButton.textContent = originalButtonText;
+            }
+          }
+        });
+      });
+
+      root.querySelectorAll("[data-launch-latest-link]").forEach((node) => {
+        node.addEventListener("click", () => {
+          track("launch_latest_issue_click");
+        });
+      });
+
+      root.querySelectorAll("[data-launch-article-link]").forEach((node) => {
+        node.addEventListener("click", () => {
+          track("launch_article_click");
+        });
+      });
+    })();
+  </script>
+
+  <style>
+    .launch-global-lang {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 12px);
+      right: calc(env(safe-area-inset-right, 0px) + 12px);
+      z-index: 90;
+    }
+
+    @media (max-width: 960px) {
+      .launch-global-lang {
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        right: calc(env(safe-area-inset-right, 0px) + 10px);
+      }
+    }
+  </style>
+</FlowLayout>

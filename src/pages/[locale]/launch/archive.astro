@@ -1,0 +1,1026 @@
+---
+export const prerender = false;
+
+import FlowLayout from "@/layouts/FlowLayout.astro";
+import LanguageSwitcher from "@/components/launch/LanguageSwitcher.astro";
+import { formatReadTime, mapHtmlLang } from "@/lib/format";
+import { getLaunchPosts } from "@/lib/launch-posts";
+import { LOCALES } from "@/lib/locales";
+import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
+import { getCategories, getPosts, getSiteSettings } from "@/lib/sanity/api";
+import { urlFor } from "@/lib/sanity/image";
+import type { PostCardDTO } from "@/lib/types";
+
+const rawLocale = Astro.params.locale;
+const locale = getLocaleOrDefault(rawLocale);
+if (!rawLocale || rawLocale.toLowerCase() !== locale) {
+  return Astro.redirect("/en-us/launch/archive", 302);
+}
+
+const isPreview = isPreviewRequest(Astro.cookies);
+const [settings, posts, categories] = await Promise.all([
+  getSiteSettings(locale, isPreview),
+  getPosts(locale, isPreview),
+  getCategories(locale, isPreview),
+]);
+
+const launchPosts = getLaunchPosts(posts);
+
+const imageForPost = (post: PostCardDTO, width: number, height: number): string => {
+  if (post.coverImage) {
+    return urlFor(post.coverImage).width(width).height(height).fit("crop").auto("format").url();
+  }
+  return "";
+};
+
+const formatPostDate = (isoDate: string): string => {
+  try {
+    return new Intl.DateTimeFormat(mapHtmlLang(locale), {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    }).format(new Date(isoDate));
+  } catch {
+    return isoDate;
+  }
+};
+
+const postCount = launchPosts.length;
+const isSinglePost = postCount === 1;
+const feature = launchPosts[0] || null;
+const showFilters = postCount >= 4;
+const gridPosts = showFilters ? launchPosts.slice(1, 4) : launchPosts.slice(1);
+const listPosts = showFilters ? launchPosts.slice(4) : [];
+const launchCategorySlugs = new Set(launchPosts.map((post) => post.category?.slug).filter(Boolean));
+
+const launchPath = `/${locale}/launch`;
+const launchArchivePath = `/${locale}/launch/archive`;
+const writingCanonicalPath = `/${locale}/writing`;
+const launchArchiveAlternates = LOCALES.map((item) => ({
+  hrefLang: mapHtmlLang(item.key),
+  href: `/${item.key}/launch/archive`,
+}));
+const localeOptions = LOCALES.map((item) => ({ key: item.key, label: item.label, flag: item.flag }));
+
+const description = isSinglePost
+  ? "Launch archive with the first essay and a direct path to subscribe."
+  : "Launch archive with a simplified editorial surface while the site is still taking shape.";
+
+const tabs = [
+  { slug: "all", title: locale.startsWith("pt-") ? "Todos" : "All" },
+  ...categories
+    .filter((item) => launchCategorySlugs.has(item.slug))
+    .map((item) => ({ slug: item.slug, title: item.title })),
+];
+
+const launchFootnote = locale.startsWith("pt-")
+  ? "Esta e a versao de lancamento do site. A versao final incluira multimidia e ferramentas mais aprofundadas."
+  : locale.startsWith("fr-")
+    ? "Ceci est la version de lancement du site. La version finale inclura du multimedia et des outils plus approfondis."
+    : "This is the launch version of the website. The finished version will include multimedia and more in-depth tools.";
+
+const archiveIntro = isSinglePost
+  ? locale.startsWith("pt-")
+    ? "O primeiro ensaio deste arquivo de lancamento. Leia-o aqui e assine para receber o que vem a seguir."
+    : locale.startsWith("fr-")
+      ? "Le premier essai de cette archive de lancement. Lisez-le ici, puis abonnez-vous pour la suite."
+      : "The first entry in the launch archive. Read it here, then subscribe for what follows."
+  : locale.startsWith("pt-")
+    ? "Leia os ensaios publicados durante o lancamento. Um arquivo mais contido enquanto a versao completa do site ganha forma."
+    : locale.startsWith("fr-")
+      ? "Lisez les essais publies pendant le lancement. Une archive plus sobre pendant que la version complete du site prend forme."
+      : "Read the essays published during launch. A quieter archive while the full site is still taking shape.";
+
+const subscribeHeading = locale.startsWith("pt-")
+  ? "Escrita que vale a espera"
+  : locale.startsWith("fr-")
+    ? "Une ecriture qui merite l'attente"
+    : "Writing worth waiting for";
+
+const subscribeText = locale.startsWith("pt-")
+  ? "Um ensaio que vale o seu tempo, assim que o proximo estiver pronto."
+  : locale.startsWith("fr-")
+    ? "Un essai qui vaut votre temps, des que le prochain est pret."
+    : "One essay worth your time, right when the next one is ready.";
+
+const subscribePlaceholder = locale === "pt-br"
+  ? "E-mail corporativo"
+  : locale === "pt-pt"
+    ? "E-mail profissional"
+    : locale.startsWith("fr-")
+      ? "E-mail professionnel"
+      : "Work email";
+
+const subscribeCta = locale.startsWith("pt-")
+  ? "Receber o proximo insight"
+  : locale.startsWith("fr-")
+    ? "Recevoir le prochain insight"
+    : "Get the next essay";
+
+const postUrl = (post: PostCardDTO) => `/${locale}/launch/archive/${post.slug}`;
+const categorySlug = (post: PostCardDTO) => post.category?.slug || "uncategorized";
+const categoryLabel = (post: PostCardDTO) => post.category?.title || (locale.startsWith("pt-") ? "Editorial" : "Editorial");
+const hasCoverImage = (post: PostCardDTO) => Boolean(post.coverImage);
+---
+
+<FlowLayout
+  title={`${settings.siteTitle} — Launch Archive`}
+  description={description}
+  lang={mapHtmlLang(locale)}
+  locale={locale}
+  robots="noindex,follow"
+  canonicalPath={writingCanonicalPath}
+  alternateLinks={launchArchiveAlternates}
+  xDefaultHref="/en-us/launch/archive"
+>
+  <div class="launch-global-lang launch-archive__lang">
+    <LanguageSwitcher
+      locale={locale}
+      localeOptions={localeOptions}
+      localeLinkSuffix="/archive"
+      tone="light"
+    />
+  </div>
+
+  <main class:list={["launch-archive", { "launch-archive--single": isSinglePost }]} data-launch-archive>
+    <header class:list={["launch-archive__header", { "launch-archive__header--single": isSinglePost }]}>
+      <div>
+        <p class="launch-archive__eyebrow">{settings.siteTitle}</p>
+        <h1>The <em>Archive</em></h1>
+        <p>{archiveIntro}</p>
+      </div>
+      <a href={launchPath}>Back to launch home</a>
+    </header>
+
+    {showFilters ? (
+      <nav class="launch-archive__tabs" aria-label="Archive categories">
+        {tabs.map((tab, index) => (
+          <button
+            class:list={{ "is-active": index === 0 }}
+            type="button"
+            data-filter-tab
+            data-filter={tab.slug}
+          >
+            {tab.title}
+          </button>
+        ))}
+      </nav>
+    ) : null}
+
+    <section class:list={["launch-archive__editorial", { "launch-archive__editorial--single": isSinglePost }]} data-launch-list>
+      {feature ? (
+        <article class="launch-archive-item launch-archive__feature" data-category={categorySlug(feature)}>
+          <a
+            class:list={{
+              "launch-archive__feature-media": true,
+              "launch-archive__feature-media--fallback": !hasCoverImage(feature),
+            }}
+            href={postUrl(feature)}
+          >
+            {hasCoverImage(feature) ? (
+              <img
+                src={imageForPost(feature, 1440, 860)}
+                alt={feature.title}
+                loading="eager"
+                fetchpriority="high"
+                width="1440"
+                height="860"
+              />
+            ) : (
+              <span class="launch-archive__feature-fallback-title">{feature.title}</span>
+            )}
+            {hasCoverImage(feature) ? <span class="launch-archive__feature-overlay"></span> : null}
+          </a>
+          {hasCoverImage(feature) ? (
+            <div class="launch-archive__feature-content">
+              <p>{categoryLabel(feature)}</p>
+              <h2>
+                {feature.title}
+                {feature.titleEmphasis ? <><br />{feature.titleEmphasis}</> : null}
+              </h2>
+              <p>{feature.excerpt}</p>
+              <div>
+                <span>{formatPostDate(feature.publishedAt)}</span>
+                <span aria-hidden="true">&middot;</span>
+                <span>{formatReadTime(feature.readTimeMinutes)}</span>
+              </div>
+            </div>
+          ) : null}
+        </article>
+      ) : null}
+    </section>
+
+    {gridPosts.length ? (
+      <section
+        class:list={{
+          "launch-archive__grid": true,
+          "launch-archive__grid--single": gridPosts.length === 1,
+          "launch-archive__grid--duo": gridPosts.length === 2,
+        }}
+        data-launch-list
+      >
+        {gridPosts.map((post) => (
+          <article class="launch-archive-item launch-archive__card" data-category={categorySlug(post)}>
+            {hasCoverImage(post) ? (
+              <>
+                <a class="launch-archive__card-media" href={postUrl(post)}>
+                  <img
+                    src={imageForPost(post, 880, 620)}
+                    alt={post.title}
+                    loading="lazy"
+                    width="880"
+                    height="620"
+                  />
+                  <span class="launch-archive__card-overlay"></span>
+                </a>
+                <div class="launch-archive__card-body">
+                  <p>{categoryLabel(post)}</p>
+                  <h3>
+                    {post.title}
+                    {post.titleEmphasis ? <><br />{post.titleEmphasis}</> : null}
+                  </h3>
+                  <p>{post.excerpt}</p>
+                  <div>
+                    <span>{formatPostDate(post.publishedAt)}</span>
+                    <span aria-hidden="true">&middot;</span>
+                    <span>{formatReadTime(post.readTimeMinutes)}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <a class="launch-archive__card-fallback" href={postUrl(post)}>
+                <span class="launch-archive__card-fallback-label">{categoryLabel(post)}</span>
+                <h3>
+                  {post.title}
+                  {post.titleEmphasis ? <><br />{post.titleEmphasis}</> : null}
+                </h3>
+              </a>
+            )}
+          </article>
+        ))}
+      </section>
+    ) : null}
+
+    {listPosts.length ? (
+      <section class="launch-archive__list" data-launch-list>
+        {listPosts.map((post) => (
+          <article class="launch-archive-item launch-archive__row" data-category={categorySlug(post)}>
+            <a class="launch-archive__row-main" href={postUrl(post)}>
+              <h4>
+                {post.title}
+                {post.titleEmphasis ? <><span> </span>{post.titleEmphasis}</> : null}
+              </h4>
+              <p>{post.excerpt}</p>
+            </a>
+            <div class="launch-archive__row-meta">
+              <span>{categoryLabel(post)}</span>
+              <span>{formatPostDate(post.publishedAt)}</span>
+              <span>{formatReadTime(post.readTimeMinutes)}</span>
+            </div>
+          </article>
+        ))}
+      </section>
+    ) : null}
+
+    <section class:list={["launch-archive__subscribe", { "launch-archive__subscribe--single": isSinglePost }]}>
+      <div>
+        <h2>{subscribeHeading}</h2>
+        <p>{subscribeText}</p>
+      </div>
+      <form method="POST" action="/api/newsletter/subscribe" data-launch-archive-form>
+        <input type="hidden" name="locale" value={locale} />
+        <input type="hidden" name="source" value="launch_archive" />
+        <input type="hidden" name="path" value={launchArchivePath} />
+        <label class="sr-only" for="launch-archive-email">Email</label>
+        <input id="launch-archive-email" type="email" name="email" placeholder={subscribePlaceholder} required />
+        <button type="submit">{subscribeCta}</button>
+      </form>
+    </section>
+
+    <p class="launch-archive__footnote">{launchFootnote}</p>
+  </main>
+
+  <script is:inline>
+    (() => {
+      const root = document.querySelector("[data-launch-archive]");
+      if (!root) return;
+
+      const tabs = Array.from(root.querySelectorAll("[data-filter-tab]"));
+      const items = Array.from(root.querySelectorAll(".launch-archive-item"));
+
+      const runFilter = (filter) => {
+        items.forEach((item) => {
+          const category = item.getAttribute("data-category");
+          const show = filter === "all" || category === filter;
+          item.classList.toggle("is-hidden", !show);
+        });
+      };
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const filter = tab.getAttribute("data-filter") || "all";
+          tabs.forEach((item) => item.classList.toggle("is-active", item === tab));
+          runFilter(filter);
+        });
+      });
+
+      const subscribeForm = root.querySelector("[data-launch-archive-form]");
+      if (subscribeForm instanceof HTMLFormElement) {
+        subscribeForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const emailInput = subscribeForm.querySelector('input[type="email"]');
+          const submitButton = subscribeForm.querySelector('button[type="submit"]');
+          if (!(emailInput instanceof HTMLInputElement) || !emailInput.value.trim()) return;
+
+          const originalText =
+            submitButton instanceof HTMLButtonElement ? submitButton.textContent || "" : "";
+          if (submitButton instanceof HTMLButtonElement) {
+            submitButton.disabled = true;
+            submitButton.textContent = "...";
+          }
+
+          try {
+            const formData = new FormData(subscribeForm);
+            const response = await fetch(subscribeForm.action, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json, text/plain, */*",
+              },
+              body: JSON.stringify({
+                locale: String(formData.get("locale") || locale),
+                email: emailInput.value.trim(),
+                source: String(formData.get("source") || "launch_archive"),
+                path: String(formData.get("path") || launchArchivePath),
+              }),
+              credentials: "same-origin",
+              redirect: "follow",
+            });
+
+            if (response.ok && response.url) {
+              window.location.href = response.url;
+              return;
+            }
+          } catch {
+            // Fall through to restore button text.
+          } finally {
+            if (submitButton instanceof HTMLButtonElement) {
+              submitButton.disabled = false;
+              submitButton.textContent = originalText;
+            }
+          }
+        });
+      }
+    })();
+  </script>
+
+  <style>
+    .launch-global-lang,
+    .launch-archive__lang {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 12px);
+      right: calc(env(safe-area-inset-right, 0px) + 12px);
+      z-index: 90;
+    }
+
+    :global(body.flow-page) {
+      display: block;
+      min-height: 100vh;
+      min-height: 100svh;
+    }
+
+    .launch-archive {
+      background: #f0ebe4;
+      color: #2a2a2a;
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      padding: clamp(28px, 4vw, 48px) clamp(16px, 3vw, 28px) 72px;
+    }
+
+    .launch-archive--single {
+      max-width: 1180px;
+    }
+
+    .launch-archive__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .launch-archive__header--single {
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .launch-archive__eyebrow {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: #8a7e76;
+      margin-bottom: 10px;
+    }
+
+    .launch-archive h1 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(44px, 6.2vw, 72px);
+      line-height: 0.92;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      color: #3d2817;
+    }
+
+    .launch-archive h1 em {
+      font-style: italic;
+    }
+
+    .launch-archive__header > div > p:last-child {
+      max-width: 680px;
+      color: #5a5550;
+      font-family: "Spectral", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.45;
+    }
+
+    .launch-archive__header > a {
+      color: #3d2817;
+      text-decoration: none;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #d5cfc7;
+      padding-bottom: 4px;
+      white-space: nowrap;
+      margin-top: 4px;
+    }
+
+    .launch-archive__header--single > a {
+      margin-top: 0;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: rgba(61, 40, 23, 0.72);
+    }
+
+    .launch-archive__tabs {
+      border-bottom: 1px solid rgba(61, 40, 23, 0.14);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      padding-bottom: 8px;
+    }
+
+    .launch-archive__tabs button {
+      border: none;
+      background: transparent;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(61, 40, 23, 0.55);
+      cursor: pointer;
+      padding: 6px 0;
+      border-bottom: 2px solid transparent;
+    }
+
+    .launch-archive__tabs button.is-active {
+      color: #3d2817;
+      border-color: #b8564f;
+    }
+
+    .launch-archive__editorial {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .launch-archive__editorial--single {
+      max-width: 1040px;
+      margin: 0 auto 28px;
+    }
+
+    .launch-archive__feature,
+    .launch-archive__secondary {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(61, 40, 23, 0.12);
+      background: #2b2520;
+    }
+
+    .launch-archive--single .launch-archive__feature {
+      border-color: rgba(61, 40, 23, 0.1);
+      background: #221b15;
+    }
+
+    .launch-archive__feature-media,
+    .launch-archive__secondary-media {
+      display: block;
+      position: relative;
+      min-height: clamp(340px, 48vw, 520px);
+      overflow: hidden;
+    }
+
+    .launch-archive__secondary-media {
+      min-height: clamp(280px, 38vw, 420px);
+    }
+
+    .launch-archive__feature-media--fallback {
+      min-height: clamp(340px, 48vw, 520px);
+      background: #1a1710;
+      display: grid;
+      place-items: center;
+      text-decoration: none;
+      padding: 24px;
+    }
+
+    .launch-archive--single .launch-archive__feature-media,
+    .launch-archive--single .launch-archive__feature-media--fallback {
+      min-height: clamp(420px, 54vw, 620px);
+    }
+
+    .launch-archive__feature-media img,
+    .launch-archive__secondary-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: saturate(0.92) contrast(1.03);
+      transition: transform 0.35s ease;
+    }
+
+    .launch-archive__feature-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(24, 15, 11, 0.6) 14%, rgba(24, 15, 11, 0.12) 54%, rgba(24, 15, 11, 0.4) 100%);
+      transition: opacity 0.35s ease, background 0.35s ease;
+    }
+
+    .launch-archive--single .launch-archive__feature-overlay {
+      background: linear-gradient(to top, rgba(24, 15, 11, 0.76) 12%, rgba(24, 15, 11, 0.18) 50%, rgba(24, 15, 11, 0.28) 100%);
+    }
+
+    .launch-archive__feature-fallback-title {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 0.98;
+      letter-spacing: -0.02em;
+      color: #f6f3ec;
+      max-width: 780px;
+      text-align: center;
+    }
+
+    .launch-archive__feature-content {
+      position: absolute;
+      inset: auto 0 0;
+      padding: clamp(18px, 2.6vw, 34px);
+      color: #fff;
+      z-index: 2;
+    }
+
+    .launch-archive--single .launch-archive__feature-content {
+      padding: clamp(24px, 3vw, 38px);
+    }
+
+    .launch-archive__feature-content > p:first-child {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 214, 204, 0.9);
+      margin-bottom: 12px;
+    }
+
+    .launch-archive__feature-content h2 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 0.96;
+      letter-spacing: -0.02em;
+      margin: 0 0 12px;
+      max-width: 900px;
+      transition: transform 0.35s ease;
+    }
+
+    .launch-archive--single .launch-archive__feature-content h2 {
+      font-size: clamp(40px, 5.4vw, 70px);
+      max-width: 840px;
+      margin-bottom: 10px;
+    }
+
+    .launch-archive__feature-content > p:nth-of-type(2) {
+      font-family: "Spectral", Georgia, serif;
+      font-size: 19px;
+      line-height: 1.4;
+      color: rgba(255, 255, 255, 0.86);
+      margin-bottom: 13px;
+      max-width: 860px;
+    }
+
+    .launch-archive--single .launch-archive__feature-content > p:nth-of-type(2) {
+      font-size: 18px;
+      line-height: 1.45;
+      max-width: 700px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .launch-archive__feature-content > div {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.66);
+    }
+
+    .launch-archive__feature:hover .launch-archive__feature-media img,
+    .launch-archive__secondary:hover .launch-archive__secondary-media img {
+      transform: scale(1.03);
+    }
+
+    .launch-archive__feature:hover .launch-archive__feature-overlay,
+    .launch-archive__secondary:hover .launch-archive__feature-overlay {
+      background: linear-gradient(to top, rgba(24, 15, 11, 0.75) 14%, rgba(24, 15, 11, 0.16) 54%, rgba(24, 15, 11, 0.44) 100%);
+    }
+
+    .launch-archive__feature:hover .launch-archive__feature-content h2,
+    .launch-archive__secondary:hover .launch-archive__feature-content h2 {
+      transform: translateY(-3px);
+    }
+
+    .launch-archive__subscribe {
+      border: 1px solid rgba(246, 243, 236, 0.12);
+      background: #1a1710;
+      padding: 64px clamp(20px, 4vw, 40px);
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 24px;
+      align-items: end;
+    }
+
+    .launch-archive__subscribe--single {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 48px clamp(20px, 3.8vw, 36px);
+      grid-template-columns: 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .launch-archive__subscribe h2 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(32px, 3.8vw, 48px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: #f6f3ec;
+      margin-bottom: 10px;
+    }
+
+    .launch-archive__subscribe--single h2 {
+      font-size: clamp(30px, 3.2vw, 42px);
+      margin-bottom: 8px;
+    }
+
+    .launch-archive__subscribe p {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #f6f3ec;
+      opacity: 1;
+      max-width: 560px;
+    }
+
+    .launch-archive__subscribe--single p {
+      max-width: 44ch;
+      color: rgba(246, 243, 236, 0.82);
+    }
+
+    .launch-archive__subscribe form {
+      display: flex;
+      border: 1px solid rgba(246, 243, 236, 0.52);
+      background: rgba(26, 23, 16, 0.3);
+    }
+
+    .launch-archive__subscribe--single form {
+      max-width: 620px;
+    }
+
+    .launch-archive__subscribe input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      padding: 12px 14px;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 14px;
+      color: #f6f3ec;
+      outline: none;
+    }
+
+    .launch-archive__subscribe input::placeholder {
+      color: rgba(246, 243, 236, 0.72);
+    }
+
+    .launch-archive__subscribe button {
+      border: none;
+      background: #6e2535;
+      color: #f6f3ec;
+      padding: 12px 16px;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .launch-archive__grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 12px;
+    }
+
+    .launch-archive__grid--single {
+      grid-template-columns: minmax(0, 1fr);
+      max-width: 720px;
+    }
+
+    .launch-archive__grid--duo {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .launch-archive__card {
+      border: 1px solid rgba(61, 40, 23, 0.12);
+      background: rgba(255, 255, 255, 0.32);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .launch-archive__card-media {
+      display: block;
+      min-height: 190px;
+      background: rgba(61, 40, 23, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .launch-archive__card-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .launch-archive__card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(24, 15, 11, 0.6) 10%, rgba(24, 15, 11, 0) 58%);
+      transition: background 0.3s ease;
+    }
+
+    .launch-archive__card-fallback {
+      min-height: 320px;
+      background: #1a1710;
+      color: #f6f3ec;
+      text-decoration: none;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: background-color 0.25s ease;
+    }
+
+    .launch-archive__card-fallback-label {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 3px 10px;
+      border-radius: 3px;
+    }
+
+    .launch-archive__card-fallback h3 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(26px, 2.4vw, 34px);
+      line-height: 1.02;
+      letter-spacing: -0.015em;
+      color: #f6f3ec;
+      margin: 0;
+      text-align: center;
+      transition: transform 0.25s ease;
+    }
+
+    .launch-archive__card-body {
+      padding: 16px;
+    }
+
+    .launch-archive__card-body > p:first-child {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(61, 40, 23, 0.5);
+      margin-bottom: 8px;
+    }
+
+    .launch-archive__card-body h3 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(24px, 2.2vw, 30px);
+      line-height: 1;
+      letter-spacing: -0.015em;
+      color: #3d2817;
+      margin: 0 0 8px;
+      transition: transform 0.3s ease;
+    }
+
+    .launch-archive__card-body > p:nth-of-type(2) {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+      color: #5a5550;
+      margin-bottom: 10px;
+    }
+
+    .launch-archive__card-body > div {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: rgba(61, 40, 23, 0.5);
+    }
+
+    .launch-archive__list {
+      margin-bottom: 16px;
+      border-top: 1px solid rgba(61, 40, 23, 0.12);
+    }
+
+    .launch-archive__card:hover .launch-archive__card-media img {
+      transform: scale(1.04);
+    }
+
+    .launch-archive__card:hover .launch-archive__card-overlay {
+      background: linear-gradient(to top, rgba(24, 15, 11, 0.75) 10%, rgba(24, 15, 11, 0.06) 58%);
+    }
+
+    .launch-archive__card:hover .launch-archive__card-body h3 {
+      transform: translateY(-2px);
+    }
+
+    .launch-archive__card:hover .launch-archive__card-fallback {
+      background: #2a2720;
+    }
+
+    .launch-archive__card:hover .launch-archive__card-fallback h3 {
+      transform: translateY(-2px);
+    }
+
+    .launch-archive__row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid rgba(61, 40, 23, 0.1);
+      padding: 14px 0;
+    }
+
+    .launch-archive__row-main {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .launch-archive__row h4 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(24px, 2.1vw, 32px);
+      line-height: 1;
+      letter-spacing: -0.015em;
+      color: #3d2817;
+      margin-bottom: 8px;
+      transition: color 0.2s ease;
+    }
+
+    .launch-archive__row p {
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #5a5550;
+      max-width: 840px;
+    }
+
+    .launch-archive__row-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: rgba(61, 40, 23, 0.55);
+      white-space: nowrap;
+    }
+
+    .launch-archive__row:hover h4 {
+      color: #6e2535;
+    }
+
+    .launch-archive__footnote {
+      margin-top: 16px;
+      color: rgba(61, 40, 23, 0.5);
+      font-family: "DM Sans", Arial, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .launch-archive--single .launch-archive__footnote {
+      max-width: 1040px;
+      margin: 12px auto 0;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: none;
+    }
+
+    .launch-archive-item.is-hidden {
+      display: none !important;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    @media (max-width: 1024px) {
+      .launch-archive__subscribe {
+        grid-template-columns: 1fr;
+      }
+
+      .launch-archive__grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .launch-archive__row {
+        grid-template-columns: 1fr;
+      }
+
+      .launch-archive__row-meta {
+        flex-wrap: wrap;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .launch-global-lang,
+      .launch-archive__lang {
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        right: calc(env(safe-area-inset-right, 0px) + 10px);
+      }
+
+      .launch-archive {
+        padding-top: 26px;
+      }
+
+      .launch-archive__header {
+        flex-direction: column;
+      }
+
+      .launch-archive__header > a {
+        margin-top: 0;
+      }
+
+      .launch-archive__feature-content h2 {
+        font-size: clamp(30px, 9vw, 46px);
+      }
+
+      .launch-archive__feature-content > p:nth-of-type(2) {
+        font-size: 16px;
+      }
+
+      .launch-archive__grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</FlowLayout>

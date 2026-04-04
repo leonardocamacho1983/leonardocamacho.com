@@ -1,6 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { trackGrowthEvent } from '@/lib/analytics/growth';
 import type { LocaleKey } from '@/lib/locales';
 import { isKitConfigured, subscribeToKit } from '@/lib/newsletter/kit';
 import { getSiteSettings } from '@/lib/sanity/api';
@@ -45,6 +46,24 @@ const inferPath = (request: Request, locale: LocaleKey): string => {
   }
 };
 
+const mapSourceToSurface = (source: string): string => {
+  if (source === 'home') return 'home';
+  if (source === 'writing') return 'writing_index';
+  if (source === 'launch-mode') return 'launch';
+  return 'other';
+};
+
+const trackGrowthSafely = async (
+  event: Parameters<typeof trackGrowthEvent>[0],
+  properties: Parameters<typeof trackGrowthEvent>[1],
+): Promise<void> => {
+  try {
+    await trackGrowthEvent(event, properties);
+  } catch {
+    // Never fail request because of analytics delivery.
+  }
+};
+
 export const POST: APIRoute = async ({ request }) => {
   let payload: { email?: unknown; locale?: unknown; source?: unknown; path?: unknown };
   try {
@@ -65,20 +84,48 @@ export const POST: APIRoute = async ({ request }) => {
       ? sanitizeText(payload.source, 40) || 'launch-mode'
       : 'launch-mode';
   const requestedPath = typeof payload.path === 'string' ? sanitizePath(payload.path) : '';
+  const normalizedLocale = normalizeLocale(locale);
+  const resolvedPath = requestedPath || inferPath(request, normalizedLocale);
+  const surfaceType = mapSourceToSurface(source);
 
   if (!isValidEmail(email)) {
+    await trackGrowthSafely('newsletter_subscribe_failed', {
+      locale: normalizedLocale,
+      path: resolvedPath,
+      source,
+      surface_type: surfaceType,
+      reason: 'invalid_email',
+    });
     return new Response(JSON.stringify({ error: 'Valid email required' }), { status: 400 });
   }
 
   if (!isKitConfigured()) {
+    await trackGrowthSafely('newsletter_subscribe_failed', {
+      locale: normalizedLocale,
+      path: resolvedPath,
+      source,
+      surface_type: surfaceType,
+      reason: 'service_unavailable',
+    });
     return new Response(JSON.stringify({ error: 'Service unavailable' }), { status: 503 });
   }
 
-  const normalizedLocale = normalizeLocale(locale);
-  const resolvedPath = requestedPath || inferPath(request, normalizedLocale);
+  await trackGrowthSafely('newsletter_subscribe_attempt', {
+    locale: normalizedLocale,
+    path: resolvedPath,
+    source,
+    surface_type: surfaceType,
+  });
   const ip = getClientIp(request.headers);
 
   if (isRateLimited(`launch:subscribe:${ip}:${email}`, 8, 60_000)) {
+    await trackGrowthSafely('newsletter_subscribe_failed', {
+      locale: normalizedLocale,
+      path: resolvedPath,
+      source,
+      surface_type: surfaceType,
+      reason: 'rate_limited',
+    });
     return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 });
   }
 
@@ -98,12 +145,26 @@ export const POST: APIRoute = async ({ request }) => {
       consentPolicyVersion,
     });
 
+    await trackGrowthSafely('newsletter_subscribe_success', {
+      locale: normalizedLocale,
+      path: resolvedPath,
+      source,
+      surface_type: surfaceType,
+    });
+
     return new Response(
       JSON.stringify({ success: true, subscriber_id: result.subscriberId || null }),
       { status: 200 },
     );
   } catch (error) {
     console.error('[api/subscribe] Subscribe error:', error);
+    await trackGrowthSafely('newsletter_subscribe_failed', {
+      locale: normalizedLocale,
+      path: resolvedPath,
+      source,
+      surface_type: surfaceType,
+      reason: 'server_error',
+    });
     return new Response(JSON.stringify({ error: 'Server error' }), { status: 500 });
   }
 };

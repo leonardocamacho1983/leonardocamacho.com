@@ -3,7 +3,7 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Telemetry from "@/components/analytics/Telemetry.astro";
 import { mapHtmlLang } from "@/lib/format";
-import type { LocaleKey } from "@/lib/locales";
+import { routeFromPath, type LocaleKey } from "@/lib/locales";
 import type { LocaleLinkDTO, SiteSettingsDTO } from "@/lib/types";
 import { absoluteUrl } from "@/lib/seo";
 import Analytics from "@vercel/analytics/astro";
@@ -22,6 +22,24 @@ interface Props {
   canonicalPath: string;
   isPreview?: boolean;
   structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
+  openGraph?: {
+    type?: "website" | "article";
+    title?: string;
+    description?: string;
+    image?: string;
+    imageAlt?: string;
+    publishedTime?: string;
+    modifiedTime?: string;
+    section?: string;
+  };
+  twitter?: {
+    card?: "summary" | "summary_large_image";
+    title?: string;
+    description?: string;
+    image?: string;
+    imageAlt?: string;
+  };
+  hideSiteChrome?: boolean;
 }
 
 const {
@@ -33,28 +51,75 @@ const {
   canonicalPath,
   isPreview = false,
   structuredData,
+  openGraph,
+  twitter,
+  hideSiteChrome = false,
 } = Astro.props;
 
 const pageTitle = title || settings.seoTitle;
 const pageDescription = description || settings.seoDescription;
-const canonicalUrl = absoluteUrl(canonicalPath, Astro.url);
+const canonicalUrl = absoluteUrl(canonicalPath, Astro.url, Astro.request.headers);
 const availableLocaleLinks = localeLinks.filter((link) => link.available !== false);
 const xDefaultPath = availableLocaleLinks[0]?.href || canonicalPath;
-const ogImage = settings.seoImage ? absoluteUrl(`/api/og?locale=${locale}`, Astro.url) : undefined;
+const editorialFontsHref =
+  "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Spectral:ital,wght@0,400;0,500;1,400&display=optional";
+const editorialFontsLinkId = "editorial-fonts-link";
+const routeForOg = routeFromPath(canonicalPath);
+const identityOgPage = routeForOg === "about" || routeForOg === "writing" || routeForOg === "privacy"
+  ? routeForOg
+  : "home";
+const ogTitle = openGraph?.title || pageTitle;
+const ogDescription = openGraph?.description || pageDescription;
+const ogType = openGraph?.type || "website";
+const ogImage = openGraph?.image || absoluteUrl(`/og/${identityOgPage}.png`, Astro.url, Astro.request.headers);
+const ogImageAlt = openGraph?.imageAlt || ogTitle;
+const twitterTitle = twitter?.title || ogTitle;
+const twitterDescription = twitter?.description || ogDescription;
+const twitterImage = twitter?.image || ogImage;
+const twitterImageAlt = twitter?.imageAlt || ogImageAlt;
+const twitterCard = twitter?.card || "summary_large_image";
 const htmlLang = mapHtmlLang(locale);
+const siteRootUrl = absoluteUrl("/", Astro.url, Astro.request.headers);
+const websiteSchemaId = `${siteRootUrl}#website`;
+const organizationSchemaId = `${siteRootUrl}#organization`;
+const personSchemaId = `${siteRootUrl}#person`;
 const defaultStructuredData: Array<Record<string, unknown>> = [
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": websiteSchemaId,
     name: settings.siteTitle,
-    url: absoluteUrl("/", Astro.url),
+    url: siteRootUrl,
     inLanguage: htmlLang,
+    publisher: {
+      "@id": organizationSchemaId,
+    },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": organizationSchemaId,
+    name: settings.siteTitle,
+    url: siteRootUrl,
   },
   {
     "@context": "https://schema.org",
     "@type": "Person",
+    "@id": personSchemaId,
     name: settings.siteTitle,
-    url: absoluteUrl(`/${locale}`, Astro.url),
+    url: absoluteUrl(`/${locale}`, Astro.url, Astro.request.headers),
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${canonicalUrl}#webpage`,
+    url: canonicalUrl,
+    name: pageTitle,
+    description: pageDescription,
+    inLanguage: htmlLang,
+    isPartOf: {
+      "@id": websiteSchemaId,
+    },
   },
 ];
 const pageStructuredData = structuredData
@@ -70,20 +135,74 @@ const schemaBlocks = [...defaultStructuredData, ...pageStructuredData];
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{pageTitle}</title>
     <meta name="description" content={pageDescription} />
+    <link rel="icon" type="image/svg+xml" sizes="any" href="/favicons/mono-black.svg" />
+    <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#F6F3EC" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" href={editorialFontsHref} as="style" />
+    <link id={editorialFontsLinkId} href={editorialFontsHref} rel="stylesheet" media="print" />
+    <noscript><link href={editorialFontsHref} rel="stylesheet" /></noscript>
+    <script is:inline>
+      (() => {
+        const link = document.getElementById("editorial-fonts-link");
+        if (link instanceof HTMLLinkElement) {
+          link.addEventListener(
+            "load",
+            () => {
+              link.media = "all";
+            },
+            { once: true },
+          );
+        }
+      })();
+    </script>
     <link rel="canonical" href={canonicalUrl} />
     {availableLocaleLinks.map((link) => (
-      <link rel="alternate" hreflang={mapHtmlLang(link.locale)} href={absoluteUrl(link.href, Astro.url)} />
+      <link
+        rel="alternate"
+        hreflang={mapHtmlLang(link.locale)}
+        href={absoluteUrl(link.href, Astro.url, Astro.request.headers)}
+      />
     ))}
-    <link rel="alternate" hreflang="x-default" href={absoluteUrl(xDefaultPath, Astro.url)} />
-    <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={pageDescription} />
-    <meta property="og:type" content="website" />
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href={absoluteUrl(xDefaultPath, Astro.url, Astro.request.headers)}
+    />
+    <meta property="og:title" content={ogTitle} />
+    <meta property="og:description" content={ogDescription} />
+    <meta property="og:type" content={ogType} />
     <meta property="og:url" content={canonicalUrl} />
-    {ogImage ? <meta property="og:image" content={ogImage} /> : null}
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+    {ogType === "article" && openGraph?.publishedTime ? (
+      <meta property="article:published_time" content={openGraph.publishedTime} />
+    ) : null}
+    {ogType === "article" && openGraph?.modifiedTime ? (
+      <meta property="article:modified_time" content={openGraph.modifiedTime} />
+    ) : null}
+    {ogType === "article" && openGraph?.section ? (
+      <meta property="article:section" content={openGraph.section} />
+    ) : null}
+    <meta name="twitter:card" content={twitterCard} />
+    <meta name="twitter:title" content={twitterTitle} />
+    <meta name="twitter:description" content={twitterDescription} />
+    <meta name="twitter:image" content={twitterImage} />
+    <meta name="twitter:image:alt" content={twitterImageAlt} />
     {schemaBlocks.map((item) => (
-      <script type="application/ld+json" set:html={JSON.stringify(item)}></script>
+      <script is:inline type="application/ld+json" set:html={JSON.stringify(item)}></script>
     ))}
-    <Telemetry />
+    <Telemetry
+      enableAutocapture={false}
+      enablePageview={true}
+      enablePageleave={false}
+      enableSessionRecording={false}
+      sessionRecordingSampleRate={0}
+      enableSurveys={false}
+    />
     <script is:inline>
       (() => {
         try {
@@ -103,7 +222,7 @@ const schemaBlocks = [...defaultStructuredData, ...pageStructuredData];
   </head>
   <body>
     <div class="page-shell">
-      <Header locale={locale} settings={settings} localeLinks={localeLinks} />
+      {hideSiteChrome ? null : <Header locale={locale} settings={settings} localeLinks={localeLinks} />}
       <main>
         {isPreview ? (
           <div class="container sec-header">
@@ -115,7 +234,7 @@ const schemaBlocks = [...defaultStructuredData, ...pageStructuredData];
         ) : null}
         <slot />
       </main>
-      <Footer settings={settings} />
+      {hideSiteChrome ? null : <Footer settings={settings} />}
     </div>
     <script is:inline defer src="/js/microanim.js"></script>
     <Analytics />

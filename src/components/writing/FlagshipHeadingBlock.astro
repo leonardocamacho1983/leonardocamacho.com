@@ -1,0 +1,12 @@
+---
+import type { BlockProps } from "astro-portabletext/types";
+
+interface Props extends BlockProps {}
+
+const { node } = Astro.props;
+const Tag = node.style === "h3" ? "h3" : "h2";
+---
+
+<Tag class="flagship-heading">
+  <slot />
+</Tag>

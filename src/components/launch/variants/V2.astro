@@ -1,0 +1,563 @@
+---
+import { formatReadTime } from "@/lib/format";
+import type { LaunchVariantProps } from "../types";
+
+const {
+  locale,
+  variant,
+  featured,
+  coverlines,
+  launchPath,
+  archivePath,
+  launchImage,
+  copy,
+} = Astro.props as LaunchVariantProps;
+
+const sourceValue = `launch_home_${variant}`;
+const featuredTitle = featured
+  ? `${featured.title}${featured.titleEmphasis ? ` ${featured.titleEmphasis}` : ""}`
+  : "";
+const featuredRead = featured ? formatReadTime(featured.readTimeMinutes) : "";
+const featuredCategory = featured?.category?.title || copy.featuredLabelFallback;
+const launchPostPath = (slug: string) => `/${locale}/launch/archive/${slug}`;
+const hasCoverlines = coverlines.length > 0;
+---
+
+<div class:list={["launch-v2", { "launch-v2--single": !hasCoverlines }]} data-launch-home data-variant={variant}>
+  <aside class:list={["launch-v2__left", { "launch-v2__left--single": !hasCoverlines }]}>
+    <div class="launch-v2__monogram">L</div>
+
+    {hasCoverlines ? (
+      <div class="launch-v2__list">
+        {coverlines.map((post) => (
+          <a class="launch-v2__row" data-launch-article-link href={launchPostPath(post.slug)}>
+            <span>{post.category?.title || copy.featuredLabelFallback}</span>
+            <strong>{post.title}{post.titleEmphasis ? ` ${post.titleEmphasis}` : ""}</strong>
+            <em>{formatReadTime(post.readTimeMinutes)}</em>
+          </a>
+        ))}
+      </div>
+    ) : null}
+
+    {featured ? (
+      <a
+        class:list={["launch-v2__card", { "launch-v2__card--single": !hasCoverlines }]}
+        data-launch-article-link
+        href={launchPostPath(featured.slug)}
+      >
+        {launchImage ? <img src={launchImage} alt={featuredTitle} loading="lazy" width="980" height="860" /> : null}
+        <div class="launch-v2__card-overlay"></div>
+        <div class="launch-v2__card-copy">
+          <span>{featuredCategory}</span>
+          <h2>{featuredTitle}</h2>
+          <p>{featuredRead}</p>
+        </div>
+      </a>
+    ) : null}
+
+    {hasCoverlines ? (
+      <a class="launch-v2__linkedin" href="https://www.linkedin.com/in/leocamacho/" target="_blank" rel="noopener noreferrer">{copy.linkedinLabel}</a>
+    ) : null}
+  </aside>
+
+  <main class:list={["launch-v2__right", { "launch-v2__right--single": !hasCoverlines }]}>
+    <div class:list={["launch-v2__inner", { "launch-v2__inner--single": !hasCoverlines }]}>
+      <div class:list={["launch-v2__byline", { "launch-v2__byline--single": !hasCoverlines }]}>
+        <span></span>
+        <p>{copy.domainLabel}</p>
+        <span></span>
+      </div>
+
+      <h1>
+        {copy.titleLines.map((part, index) => (
+          <>
+            {index > 0 ? <br /> : null}
+            {part.accent ? <em>{part.text}</em> : part.text}
+          </>
+        ))}
+      </h1>
+      <p class="launch-v2__sub">{copy.subtitle}</p>
+      <hr />
+
+      <form class="launch-v2__form" method="POST" action="/api/newsletter/subscribe" data-launch-form>
+        <input type="hidden" name="locale" value={locale} />
+        <input type="hidden" name="source" value={sourceValue} />
+        <input type="hidden" name="variant" value={variant} />
+        <input type="hidden" name="path" value={launchPath} />
+        <input type="email" name="email" placeholder={copy.placeholder} required />
+        <button type="submit">{copy.cta}</button>
+      </form>
+      <p class="launch-v2__note">{copy.footerNote}</p>
+
+      <a class="launch-v2__archive" data-launch-latest-link href={archivePath}>{copy.secondaryLink}</a>
+    </div>
+  </main>
+
+</div>
+
+<style>
+  .launch-v2 {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    height: 100svh;
+    display: grid;
+    grid-template-columns: 38fr 62fr;
+    background: #f6f3ec;
+    color: #1a1710;
+    overflow: hidden;
+  }
+
+  .launch-v2--single {
+    grid-template-columns: 42fr 58fr;
+  }
+
+  .launch-v2__left {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    background: #f0ede5;
+    border-right: 1px solid rgba(216, 210, 200, 0.55);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .launch-v2__left--single {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .launch-v2__monogram {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(30px, 3vw, 44px);
+    line-height: 1;
+    padding: clamp(20px, 3.2vh, 40px) clamp(24px, 3.6vw, 48px);
+    border-bottom: 1px solid #d8d2c8;
+  }
+
+  .launch-v2__left--single .launch-v2__monogram {
+    padding-block: clamp(24px, 3.6vh, 46px);
+  }
+
+  .launch-v2__list {
+    border-top: 1px solid #d8d2c8;
+  }
+
+  .launch-v2__row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px 12px;
+    text-decoration: none;
+    color: #4a4740;
+    padding: 14px clamp(24px, 3.6vw, 48px);
+    border-bottom: 1px solid #d8d2c8;
+    background: transparent;
+  }
+
+  .launch-v2__row:hover {
+    background: rgba(110, 37, 53, 0.03);
+  }
+
+  .launch-v2__row span {
+    grid-column: 1 / -1;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 8px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: #6e6a63;
+  }
+
+  .launch-v2__row strong {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(12px, 1.05vw, 14px);
+    font-weight: 400;
+    line-height: 1.4;
+    color: #4a4740;
+  }
+
+  .launch-v2__row em {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 9px;
+    font-style: normal;
+    letter-spacing: 0.12em;
+    color: #6e6a63;
+    white-space: nowrap;
+    align-self: center;
+  }
+
+  .launch-v2__card {
+    margin: 0;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    position: relative;
+    text-decoration: none;
+    overflow: hidden;
+    display: block;
+  }
+
+  .launch-v2__card--single {
+    background: #1a1710;
+  }
+
+  .launch-v2__card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    min-height: 380px;
+    filter: grayscale(0.38) contrast(1.05) brightness(0.9);
+    transform: scale(1);
+    transition: transform 0.35s ease;
+  }
+
+  .launch-v2__card--single img {
+    object-fit: cover;
+    object-position: center center;
+    padding: 0;
+    filter: grayscale(0.28) contrast(1.04) brightness(0.9);
+  }
+
+  .launch-v2__card--single .launch-v2__card-overlay {
+    background: linear-gradient(to top, rgba(26, 23, 16, 0.68) 0%, rgba(26, 23, 16, 0.14) 42%, rgba(26, 23, 16, 0) 76%);
+  }
+
+  .launch-v2__card:hover img {
+    transform: scale(1.03);
+  }
+
+  .launch-v2__card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(26, 23, 16, 0.6) 0%, rgba(26, 23, 16, 0.18) 52%, rgba(26, 23, 16, 0) 100%);
+    transition: background 0.35s ease;
+  }
+
+  .launch-v2__card:hover .launch-v2__card-overlay {
+    background: linear-gradient(to top, rgba(26, 23, 16, 0.75) 0%, rgba(26, 23, 16, 0.24) 52%, rgba(26, 23, 16, 0) 100%);
+  }
+
+  .launch-v2__card-copy {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 22px;
+  }
+
+  .launch-v2__card--single .launch-v2__card-copy {
+    left: clamp(26px, 3.2vw, 42px);
+    right: clamp(26px, 3.2vw, 42px);
+    bottom: clamp(24px, 3.2vw, 40px);
+  }
+
+  .launch-v2__card-copy span {
+    font-family: "DM Sans", Arial, sans-serif;
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.45);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  .launch-v2__card-copy h2 {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(34px, 3.4vw, 52px);
+    line-height: 1.02;
+    color: #fff;
+    margin: 14px 0 10px;
+    transform: translateY(0);
+    text-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    transition:
+      transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.32s ease,
+      text-shadow 0.42s ease;
+  }
+
+  .launch-v2__card--single .launch-v2__card-copy h2 {
+    font-size: clamp(42px, 4vw, 58px);
+    line-height: 0.98;
+    margin: 14px 0 8px;
+    max-width: 480px;
+  }
+
+  .launch-v2__card:hover .launch-v2__card-copy h2 {
+    transform: translateY(-3px);
+    color: #fff7f3;
+    text-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.24),
+      0 0 18px rgba(255, 244, 238, 0.16);
+  }
+
+  .launch-v2__card:focus-visible .launch-v2__card-copy h2 {
+    transform: translateY(-3px);
+    color: #fff7f3;
+    text-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.24),
+      0 0 18px rgba(255, 244, 238, 0.16);
+  }
+
+  .launch-v2__card:focus-visible {
+    outline: 2px solid rgba(246, 243, 236, 0.76);
+    outline-offset: -8px;
+  }
+
+  .launch-v2__card-copy p {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  .launch-v2__card--single .launch-v2__card-copy p {
+    font-size: 12px;
+  }
+
+  .launch-v2__linkedin {
+    padding: 14px clamp(24px, 3.6vw, 48px);
+    border-top: 1px solid #d8d2c8;
+    text-decoration: none;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #6e6a63;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .launch-v2__right {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: clamp(32px, 5vh, 80px) clamp(32px, 6vw, 96px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .launch-v2__right--single {
+    padding-inline: clamp(36px, 6vw, 108px);
+  }
+
+  .launch-v2__inner {
+    width: min(560px, 100%);
+  }
+
+  .launch-v2__inner--single {
+    width: min(520px, 100%);
+  }
+
+  .launch-v2__byline {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: clamp(24px, 3.8vh, 48px);
+  }
+
+  .launch-v2__byline--single {
+    margin-bottom: clamp(20px, 3.2vh, 38px);
+  }
+
+  .launch-v2__byline span {
+    height: 1px;
+    width: 86px;
+    background: #d8d2c8;
+  }
+
+  .launch-v2__byline--single span {
+    width: 58px;
+  }
+
+  .launch-v2__byline p {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #6e6a63;
+  }
+
+  .launch-v2__right h1 {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(44px, 5.6vw, 88px);
+    line-height: 0.95;
+    letter-spacing: -0.028em;
+    color: #1a1710;
+    margin: 0 0 16px;
+  }
+
+  .launch-v2__right--single h1 {
+    font-size: clamp(40px, 5vw, 78px);
+    margin-bottom: 14px;
+  }
+
+  .launch-v2__right h1 em {
+    color: #6e2535;
+    font-style: italic;
+  }
+
+  .launch-v2__sub {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: clamp(16px, 1.25vw, 34px);
+    line-height: 1.55;
+    color: #4a4740;
+    margin-bottom: 24px;
+  }
+
+  .launch-v2__right--single .launch-v2__sub {
+    font-size: clamp(15px, 1.08vw, 18px);
+    line-height: 1.62;
+    max-width: 29ch;
+    margin-bottom: 22px;
+  }
+
+  .launch-v2__right hr {
+    border: none;
+    border-top: 1px solid #d8d2c8;
+    margin-bottom: 24px;
+  }
+
+  .launch-v2__right--single hr {
+    margin-bottom: 22px;
+  }
+
+  .launch-v2__form {
+    display: flex;
+    border: 1px solid #d8d2c8;
+    background: #fff;
+    min-height: 48px;
+    margin-bottom: 10px;
+  }
+
+  .launch-v2__right--single .launch-v2__form {
+    min-height: 54px;
+    background: #f4f0e8;
+    margin-bottom: 12px;
+  }
+
+  .launch-v2__form input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 0 16px;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 15px;
+    color: #1a1710;
+    outline: none;
+  }
+
+  .launch-v2__form button {
+    border: none;
+    background: #6e2535;
+    color: #fff;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0 24px;
+    cursor: pointer;
+  }
+
+  .launch-v2__right--single .launch-v2__form button {
+    padding-inline: 22px;
+  }
+
+  .launch-v2__note {
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 12px;
+    color: #6e6a63;
+    margin-bottom: 18px;
+  }
+
+  .launch-v2__right--single .launch-v2__note {
+    margin-bottom: 14px;
+  }
+
+  .launch-v2__archive {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    border-bottom: 1px solid #d8d2c8;
+    padding: 0 0 2px;
+    font-family: "DM Sans", Arial, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6e6a63;
+  }
+
+  @media (max-width: 960px) {
+    .launch-v2 {
+      grid-template-columns: 1fr;
+      grid-template-rows: 90px 1fr;
+      height: 100svh;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .launch-v2__left {
+      grid-template-rows: auto;
+      min-height: 0;
+      border-right: none;
+      border-bottom: 1px solid #d8d2c8;
+    }
+
+    .launch-v2__list,
+    .launch-v2__card,
+    .launch-v2__linkedin {
+      display: none;
+    }
+
+    .launch-v2__right {
+      min-height: 0;
+      padding: 22px clamp(20px, 5vw, 30px) 56px;
+    }
+
+    .launch-v2__inner {
+      width: min(620px, calc(100% - 8px));
+      max-height: 100%;
+      overflow: hidden;
+    }
+
+    .launch-v2__byline span {
+      width: 48px;
+    }
+
+    .launch-v2__right h1 {
+      font-size: clamp(34px, 9vw, 54px);
+      margin-bottom: 12px;
+    }
+
+    .launch-v2__sub {
+      font-size: 14px;
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
+
+    .launch-v2__right hr {
+      margin-bottom: 16px;
+    }
+
+    .launch-v2__note {
+      margin-bottom: 12px;
+    }
+
+    .launch-v2__archive {
+      font-size: 9px;
+      padding: 7px 12px;
+    }
+  }
+
+  @media (max-width: 960px) and (max-height: 760px) {
+    .launch-v2__note {
+      display: none;
+    }
+  }
+</style>

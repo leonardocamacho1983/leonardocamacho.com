@@ -8,6 +8,7 @@ import { mapHtmlLang } from "@/lib/format";
 import { LOCALES, localizedPath } from "@/lib/locales";
 import { getLocaleOrDefault, isPreviewRequest } from "@/lib/page-helpers";
 import { getSiteSettings } from "@/lib/sanity/api";
+import { absoluteUrl } from "@/lib/seo";
 
 const isLaunchMode = import.meta.env.PUBLIC_LAUNCH_MODE === "true";
 
@@ -170,6 +171,44 @@ const isPreview = isPreviewRequest(Astro.cookies);
 
 const settings = isLaunchMode ? null : await getSiteSettings(locale, isPreview);
 const contactEmail = settings?.contactEmail || "hello@leonardocamacho.com";
+const siteName = settings?.siteTitle || "Leonardo Camacho";
+const canonicalPath = `/${locale}/privacy`;
+const canonicalUrl = absoluteUrl(canonicalPath, Astro.url, Astro.request.headers);
+const homeUrl = absoluteUrl(`/${locale}`, Astro.url, Astro.request.headers);
+const privacyStructuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "PrivacyPolicy",
+    "@id": `${canonicalUrl}#privacy-policy`,
+    url: canonicalUrl,
+    name: copy.title,
+    description: copy.intro,
+    inLanguage: copy.lang,
+    publisher: {
+      "@type": "Organization",
+      name: siteName,
+      url: homeUrl,
+    },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: siteName,
+        item: homeUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: copy.title,
+        item: canonicalUrl,
+      },
+    ],
+  },
+];
 
 const localeLinks = LOCALES.map((item) => ({
   locale: item.key,
@@ -190,9 +229,10 @@ const privacyAlternates = LOCALES.map((item) => ({
     description={copy.intro}
     lang={copy.lang}
     robots="index,follow"
-    canonicalPath={`/${locale}/privacy`}
+    canonicalPath={canonicalPath}
     alternateLinks={privacyAlternates}
     xDefaultHref="/en-us/privacy"
+    structuredData={privacyStructuredData}
   >
     <div class="launch-privacy-page">
       <EditorialIllustration />
@@ -251,8 +291,9 @@ const privacyAlternates = LOCALES.map((item) => ({
     localeLinks={localeLinks}
     title={`${settings!.siteTitle} | ${copy.title}`}
     description={copy.intro}
-    canonicalPath={`/${locale}/privacy`}
+    canonicalPath={canonicalPath}
     isPreview={isPreview}
+    structuredData={privacyStructuredData}
   >
     <section class="sec-privacy">
       <div class="container">

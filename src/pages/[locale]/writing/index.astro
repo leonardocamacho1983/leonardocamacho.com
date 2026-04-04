@@ -2,13 +2,15 @@
 export const prerender = false;
 
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import { formatMonthYear, formatReadTime } from "@/lib/format";
+import SignupScripts from "@/components/newsletter/SignupScripts.astro";
+import { formatMonthYear, formatReadTime, mapHtmlLang } from "@/lib/format";
 import { categoryLabel, categoryToneClass } from "@/lib/category-style";
 import { getNewsletterCopy } from "@/lib/i18n/newsletter";
 import { localizedPath } from "@/lib/locales";
 import { getLocaleOrDefault, isPreviewRequest, localeLinksForPath } from "@/lib/page-helpers";
 import { getCategories, getPosts, getSiteSettings, getWritingPage } from "@/lib/sanity/api";
 import { urlFor } from "@/lib/sanity/image";
+import { absoluteUrl } from "@/lib/seo";
 import type { PostCardDTO } from "@/lib/types";
 
 const rawLocale = Astro.params.locale;
@@ -44,11 +46,42 @@ const fallbackArchiveCoverBySlug: Record<string, string> = {
     "https://images.unsplash.com/photo-1766802981831-8baf453bb1ee?auto=format&fit=crop&w=960&q=80",
 };
 
+const resizeRemoteImage = (src: string, width: number, quality = 72): string => {
+  try {
+    const parsed = new URL(src);
+    parsed.searchParams.set("auto", "format");
+    parsed.searchParams.set("fit", "crop");
+    parsed.searchParams.set("w", String(width));
+    parsed.searchParams.set("q", String(quality));
+    return parsed.toString();
+  } catch {
+    return src;
+  }
+};
+
 const imageForPost = (post: PostCardDTO, width: number, height: number): string => {
   if (post.coverImage) {
-    return urlFor(post.coverImage).width(width).height(height).fit("crop").url();
+    return urlFor(post.coverImage).width(width).height(height).fit("crop").auto("format").url();
   }
-  return fallbackArchiveCoverBySlug[post.slug] || "";
+  const fallback = fallbackArchiveCoverBySlug[post.slug];
+  return fallback ? resizeRemoteImage(fallback, width) : "";
+};
+
+const responsiveImageForPost = (
+  post: PostCardDTO,
+  baseWidth: number,
+  baseHeight: number,
+  widths: number[],
+) => {
+  const src = imageForPost(post, baseWidth, baseHeight);
+  const srcset = widths
+    .map((width) => {
+      const scaledHeight = Math.round((baseHeight / baseWidth) * width);
+      return `${imageForPost(post, width, scaledHeight)} ${width}w`;
+    })
+    .join(", ");
+
+  return { src, srcset };
 };
 
 const searchTextForPost = (post: PostCardDTO): string =>
@@ -70,13 +103,64 @@ const headingLead = headingParts.length > 1 ? headingParts.slice(0, -1).join(" "
 const headingEmphasis = headingParts.length > 1 ? headingParts[headingParts.length - 1] : "";
 
 const homeLabel = settings.navigation.find((item) => item.route === "home")?.label || "Home";
-const coverImage = coverStory ? imageForPost(coverStory, 1200, 760) : "";
-const spreadImage = secondFeature ? imageForPost(secondFeature, 1200, 760) : "";
+const coverImage = coverStory ? responsiveImageForPost(coverStory, 1200, 760, [480, 720, 960, 1200]) : null;
+const spreadImage = secondFeature ? responsiveImageForPost(secondFeature, 1200, 760, [400, 720, 960, 1200]) : null;
+const coverImageSizes = "(min-width: 768px) 960px, calc(100vw - 40px)";
+const spreadImageSizes = "(min-width: 768px) 40vw, calc(100vw - 40px)";
+const visualImageSizes = "(min-width: 640px) 50vw, calc(100vw - 40px)";
 const articleCountLabel = locale.startsWith("pt-")
   ? "Artigos"
   : posts.length === 1
     ? "article"
     : "articles";
+const canonicalPath = `/${locale}/writing`;
+const canonicalUrl = absoluteUrl(canonicalPath, Astro.url, Astro.request.headers);
+const homeUrl = absoluteUrl(`/${locale}`, Astro.url, Astro.request.headers);
+const writingStructuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${canonicalUrl}#collection`,
+    url: canonicalUrl,
+    name: headingSource,
+    description: page.archiveDescription,
+    inLanguage: mapHtmlLang(locale),
+    isPartOf: {
+      "@type": "WebSite",
+      "@id": `${absoluteUrl("/", Astro.url, Astro.request.headers)}#website`,
+    },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListOrder: "https://schema.org/ItemListOrderDescending",
+    numberOfItems: posts.length,
+    itemListElement: posts.slice(0, 12).map((post, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: absoluteUrl(`/${locale}/writing/${post.slug}`, Astro.url, Astro.request.headers),
+      name: `${post.title}${post.titleEmphasis ? ` ${post.titleEmphasis}` : ""}`.trim(),
+    })),
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: settings.siteTitle,
+        item: homeUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Writing",
+        item: canonicalUrl,
+      },
+    ],
+  },
+];
 ---
 
 <BaseLayout
@@ -85,8 +169,9 @@ const articleCountLabel = locale.startsWith("pt-")
   localeLinks={localeLinks}
   title={`${settings.siteTitle} | ${headingSource}`}
   description={page.archiveDescription}
-  canonicalPath={`/${locale}/writing`}
+  canonicalPath={canonicalPath}
   isPreview={isPreview}
+  structuredData={writingStructuredData}
 >
   <section class="sec-writing-archive">
     <div class="container archive-shell">
@@ -154,7 +239,17 @@ const articleCountLabel = locale.startsWith("pt-")
         {coverStory ? (
           <article id="archive-cover" class="archive-cover scroll-reveal" data-y="28" data-delay="100">
             <a class="archive-cover__media" href={localizedPath(locale, "post", coverStory.slug)}>
-              <img src={coverImage} alt={coverStory.title} loading="lazy" width="1200" height="760" />
+              <img
+                src={coverImage?.src || ""}
+                srcset={coverImage?.srcset}
+                sizes={coverImageSizes}
+                alt={coverStory.title}
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+                width="1200"
+                height="760"
+              />
               <span class="archive-cover__overlay" aria-hidden="true"></span>
               <span class="archive-cover__frame" aria-hidden="true"></span>
             </a>
@@ -213,7 +308,16 @@ const articleCountLabel = locale.startsWith("pt-")
         {secondFeature ? (
           <article id="archive-spread" class="archive-spread scroll-reveal" data-y="24" data-delay="140">
             <a class="archive-spread__media" href={localizedPath(locale, "post", secondFeature.slug)}>
-              <img src={spreadImage} alt={secondFeature.title} loading="lazy" width="1200" height="760" />
+              <img
+                src={spreadImage?.src || ""}
+                srcset={spreadImage?.srcset}
+                sizes={spreadImageSizes}
+                alt={secondFeature.title}
+                loading="lazy"
+                decoding="async"
+                width="1200"
+                height="760"
+              />
               <span class="archive-spread__media-overlay" aria-hidden="true"></span>
             </a>
             <div class="archive-spread__content">
@@ -248,7 +352,7 @@ const articleCountLabel = locale.startsWith("pt-")
       <div id="archive-visual-wrap" class={`archive-visual-wrap ${visualPosts.length ? "" : "is-hidden"}`}>
         <div class="archive-visual-grid gap-writing-grid">
           {visualPosts.map((post, index) => {
-            const image = imageForPost(post, 960, 620);
+            const image = responsiveImageForPost(post, 960, 620, [360, 520, 720, 960]);
             const searchText = searchTextForPost(post);
 
             return (
@@ -261,7 +365,16 @@ const articleCountLabel = locale.startsWith("pt-")
                 data-delay={160 + index * 40}
               >
                 <a class="archive-visual-card__media" href={localizedPath(locale, "post", post.slug)}>
-                  <img src={image} alt={post.title} loading="lazy" width="960" height="620" />
+                  <img
+                    src={image.src}
+                    srcset={image.srcset}
+                    sizes={visualImageSizes}
+                    alt={post.title}
+                    loading="lazy"
+                    decoding="async"
+                    width="960"
+                    height="620"
+                  />
                   <span class="archive-visual-card__media-overlay" aria-hidden="true"></span>
                 </a>
                 <div class="archive-visual-card__body pad-writing-regular">
@@ -337,6 +450,7 @@ const articleCountLabel = locale.startsWith("pt-")
     </div>
   </section>
 
+  <SignupScripts />
   <script>
     const archiveNav = document.querySelector("#archive-nav") as HTMLElement | null;
     const searchInput = document.querySelector("#archive-search") as HTMLInputElement | null;

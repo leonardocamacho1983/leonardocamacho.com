@@ -33,7 +33,7 @@ const fetchOrFallback = async <T>(
   fallback: T,
   preview: boolean,
 ): Promise<T> => {
-  if (!hasSanityConfig) {
+  if (!hasSanityConfig()) {
     return fallback;
   }
 
@@ -118,7 +118,7 @@ export const getPostBySlug = async (
       }
     : null;
 
-  if (!hasSanityConfig) {
+  if (!hasSanityConfig()) {
     return fallback;
   }
 

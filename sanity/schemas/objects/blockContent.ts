@@ -50,5 +50,50 @@ export const blockContentType = defineType({
         },
       ],
     }),
+    defineArrayMember({
+      name: "pullQuote",
+      title: "Pull quote",
+      type: "object",
+      fields: [
+        {
+          name: "text",
+          title: "Text",
+          type: "text",
+          rows: 4,
+          validation: (Rule) => Rule.required(),
+        },
+      ],
+      preview: {
+        select: { title: "text" },
+        prepare: ({ title }) => ({
+          title: title || "Pull quote",
+          subtitle: "Flagship essay block",
+        }),
+      },
+    }),
+    defineArrayMember({
+      type: "diagramEmbed",
+    }),
+    defineArrayMember({
+      name: "epigraph",
+      title: "Epigraph",
+      type: "object",
+      fields: [
+        {
+          name: "text",
+          title: "Text",
+          type: "text",
+          rows: 4,
+          validation: (Rule) => Rule.required(),
+        },
+      ],
+      preview: {
+        select: { title: "text" },
+        prepare: ({ title }) => ({
+          title: title || "Epigraph",
+          subtitle: "Flagship essay block",
+        }),
+      },
+    }),
   ],
 });

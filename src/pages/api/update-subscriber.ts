@@ -1,6 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { trackGrowthEvent } from '@/lib/analytics/growth';
 import { isKitConfigured, updateKitProfileBySubscriberId } from '@/lib/newsletter/kit';
 import {
   getClientIp,
@@ -34,6 +35,17 @@ const normalizeCompanyWebsite = (value: unknown): string => {
   return hasUrlProtocol(clean) ? clean : `https://${clean}`;
 };
 
+const trackGrowthSafely = async (
+  event: Parameters<typeof trackGrowthEvent>[0],
+  properties: Parameters<typeof trackGrowthEvent>[1],
+): Promise<void> => {
+  try {
+    await trackGrowthEvent(event, properties);
+  } catch {
+    // Never fail profile update flow due to analytics errors.
+  }
+};
+
 export const POST: APIRoute = async ({ request }) => {
   let payload: UpdateSubscriberPayload;
   try {
@@ -52,24 +64,54 @@ export const POST: APIRoute = async ({ request }) => {
       : {};
 
   if (!subscriberId) {
+    await trackGrowthSafely('newsletter_profile_failed', {
+      source: 'confirmed_profile',
+      surface_type: 'confirmed',
+      path: '/confirmed',
+      reason: 'missing_subscriber_id',
+    });
     return new Response(JSON.stringify({ error: 'subscriber_id required' }), { status: 400 });
   }
 
   if (!updateToken) {
+    await trackGrowthSafely('newsletter_profile_failed', {
+      source: 'confirmed_profile',
+      surface_type: 'confirmed',
+      path: '/confirmed',
+      reason: 'missing_update_token',
+    });
     return new Response(JSON.stringify({ error: 'update_token required' }), { status: 400 });
   }
 
   if (!isKitConfigured() || !hasNewsletterStateTokenSecret()) {
+    await trackGrowthSafely('newsletter_profile_failed', {
+      source: 'confirmed_profile',
+      surface_type: 'confirmed',
+      path: '/confirmed',
+      reason: 'service_unavailable',
+    });
     return new Response(JSON.stringify({ error: 'Service unavailable' }), { status: 503 });
   }
 
   const ip = getClientIp(request.headers);
   if (isRateLimited(`newsletter:update:${ip}:${subscriberId}`, 20, 60_000)) {
+    await trackGrowthSafely('newsletter_profile_failed', {
+      source: 'confirmed_profile',
+      surface_type: 'confirmed',
+      path: '/confirmed',
+      reason: 'rate_limited',
+    });
     return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 });
   }
 
   const verifiedToken = verifySubscriberUpdateToken(updateToken, subscriberId);
   if (!verifiedToken) {
+    await trackGrowthSafely('newsletter_profile_failed', {
+      source: 'confirmed_profile',
+      surface_type: 'confirmed',
+      path: '/confirmed',
+      reason: 'invalid_token',
+    });
     return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 403 });
   }
 
@@ -83,9 +125,21 @@ export const POST: APIRoute = async ({ request }) => {
       strategicQuestion: getSafeField(fields.strategic_question, 500),
     });
 
+    await trackGrowthSafely('newsletter_profile_saved', {
+      source: 'confirmed_profile',
+      surface_type: 'confirmed',
+      path: '/confirmed',
+    });
+
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error) {
     console.error('[api/update-subscriber] Update error:', error);
+    await trackGrowthSafely('newsletter_profile_failed', {
+      source: 'confirmed_profile',
+      surface_type: 'confirmed',
+      path: '/confirmed',
+      reason: 'server_error',
+    });
     return new Response(JSON.stringify({ error: 'Server error' }), { status: 500 });
   }
 };

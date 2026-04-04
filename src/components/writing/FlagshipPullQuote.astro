@@ -1,0 +1,20 @@
+---
+import type { BlockProps, Props as PortableProps } from "astro-portabletext/types";
+
+interface PullQuoteNode {
+  _type: "pullQuote";
+  text: string;
+}
+
+type Props = BlockProps | PortableProps<PullQuoteNode>;
+
+const { node } = Astro.props as Props;
+const quoteText =
+  "text" in node
+    ? node.text
+    : (node.children || []).map((child) => ("text" in child ? child.text : "")).join("").trim();
+---
+
+<blockquote class="flagship-pull-quote">
+  <p>{quoteText}</p>
+</blockquote>

@@ -41,6 +41,7 @@ export interface PostCardDTO {
   id: string;
   locale: LocaleKey;
   translationKey: string;
+  templateVariant?: "standard" | "flagship";
   title: string;
   titleEmphasis?: string;
   slug: string;
@@ -48,13 +49,36 @@ export interface PostCardDTO {
   coverImage?: unknown;
   category: CategoryDTO | null;
   publishedAt: string;
+  updatedAt?: string;
   readTimeMinutes: number;
   featuredOnHome: boolean;
   featuredInArchive: boolean;
 }
 
 export interface PostDetailDTO extends PostCardDTO {
-  body: unknown[];
+  body: Array<
+    | Record<string, unknown>
+    | {
+        _type: "diagramEmbed";
+        _key?: string;
+        diagramKey?: "loop-learning" | "revision-cost" | "signal-filter" | "three-moments";
+        label: string;
+        caption: string;
+        accessibleText?: string;
+        svgCode?: string;
+      }
+  >;
+  flagshipHeroMode?: "image" | "illustration";
+  editorialPlan?: {
+    clusterRole?: "pillar" | "support" | "bridge";
+    mustLinkTo?: string[];
+    internalLinkPlan?: Array<{
+      target: string;
+      kind: "post" | "core-page";
+      purpose: "reinforce" | "bridge" | "next-step";
+      anchorHint: string;
+    }>;
+  };
   seoTitle?: string;
   seoDescription?: string;
   seoImage?: unknown;
