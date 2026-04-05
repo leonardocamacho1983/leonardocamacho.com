@@ -23,6 +23,11 @@ export interface LaunchCopy {
   linkedinLabel: string;
 }
 
+export interface LaunchImageAsset {
+  src: string;
+  srcset?: string;
+}
+
 export interface LaunchVariantProps {
   locale: LocaleKey;
   variant: LaunchVariant;
@@ -31,7 +36,8 @@ export interface LaunchVariantProps {
   launchPath: string;
   archivePath: string;
   homePath: string;
-  launchImage: string;
+  launchImage: LaunchImageAsset | null;
+  launchImageMobile?: LaunchImageAsset | null;
   currentLocaleMeta: LaunchLocaleMeta;
   localeOptions: LaunchLocaleMeta[];
   localeLinkSuffix?: string;

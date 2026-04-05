@@ -11,6 +11,7 @@ const {
   archivePath,
   homePath,
   launchImage,
+  launchImageMobile = null,
   copy,
 } = Astro.props as LaunchVariantProps;
 
@@ -25,7 +26,7 @@ const launchPostPath = (slug: string) => `/${locale}/launch/archive/${slug}`;
 const hasCoverlines = coverlines.length > 0;
 ---
 
-<div class:list={["launch-v1", { "launch-v1--single": !hasCoverlines }]} data-launch-home data-variant={variant}>
+<main class:list={["launch-v1", { "launch-v1--single": !hasCoverlines }]} data-launch-home data-variant={variant}>
   <section class="launch-v1__left">
     <div class:list={["launch-v1__masthead", { "launch-v1__masthead--single": !hasCoverlines }]}>
       <a class="launch-v1__brand" href={homePath}>L</a>
@@ -45,7 +46,28 @@ const hasCoverlines = coverlines.length > 0;
 
     {featured ? (
       <article class="launch-v1__hero">
-        {launchImage ? <img src={launchImage} alt={featuredTitle} loading="eager" width="1600" height="1300" /> : null}
+        {launchImage ? (
+          <picture>
+            {launchImageMobile ? (
+              <source
+                media="(max-width: 1040px)"
+                srcset={launchImageMobile.srcset}
+                sizes="100vw"
+              />
+            ) : null}
+            <img
+              src={launchImage.src}
+              srcset={launchImage.srcset}
+              sizes="(max-width: 1040px) 100vw, 50vw"
+              alt={featuredTitle}
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+              width="1600"
+              height="1300"
+            />
+          </picture>
+        ) : null}
         <div class="launch-v1__hero-overlay"></div>
         <div class="launch-v1__hero-copy">
           <p>{featuredCategory}</p>
@@ -94,7 +116,7 @@ const hasCoverlines = coverlines.length > 0;
     </div>
   </section>
 
-</div>
+</main>
 
 <style>
   .launch-v1 {

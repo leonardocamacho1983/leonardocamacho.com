@@ -33,6 +33,21 @@ const imageForPost = (post: PostCardDTO, width: number, height: number): string 
   return "";
 };
 
+const responsiveImageForPost = (
+  post: PostCardDTO,
+  baseWidth: number,
+  baseHeight: number,
+  widths: number[],
+) => ({
+  src: imageForPost(post, baseWidth, baseHeight),
+  srcset: widths
+    .map((width) => {
+      const scaledHeight = Math.round((baseHeight / baseWidth) * width);
+      return `${imageForPost(post, width, scaledHeight)} ${width}w`;
+    })
+    .join(", "),
+});
+
 const formatPostDate = (isoDate: string): string => {
   try {
     return new Intl.DateTimeFormat(mapHtmlLang(locale), {
@@ -121,6 +136,7 @@ const postUrl = (post: PostCardDTO) => `/${locale}/launch/archive/${post.slug}`;
 const categorySlug = (post: PostCardDTO) => post.category?.slug || "uncategorized";
 const categoryLabel = (post: PostCardDTO) => post.category?.title || (locale.startsWith("pt-") ? "Editorial" : "Editorial");
 const hasCoverImage = (post: PostCardDTO) => Boolean(post.coverImage);
+const featureImage = feature && hasCoverImage(feature) ? responsiveImageForPost(feature, 1280, 764, [360, 540, 720, 960, 1280]) : null;
 ---
 
 <FlowLayout
@@ -179,7 +195,9 @@ const hasCoverImage = (post: PostCardDTO) => Boolean(post.coverImage);
           >
             {hasCoverImage(feature) ? (
               <img
-                src={imageForPost(feature, 1440, 860)}
+                src={featureImage?.src}
+                srcset={featureImage?.srcset}
+                sizes="(max-width: 760px) calc(100vw - 32px), (max-width: 1240px) calc(100vw - 56px), 1240px"
                 alt={feature.title}
                 loading="eager"
                 fetchpriority="high"
@@ -219,13 +237,17 @@ const hasCoverImage = (post: PostCardDTO) => Boolean(post.coverImage);
         }}
         data-launch-list
       >
-        {gridPosts.map((post) => (
+        {gridPosts.map((post) => {
+          const cardImage = hasCoverImage(post) ? responsiveImageForPost(post, 880, 620, [320, 480, 640, 880]) : null;
+          return (
           <article class="launch-archive-item launch-archive__card" data-category={categorySlug(post)}>
             {hasCoverImage(post) ? (
               <>
                 <a class="launch-archive__card-media" href={postUrl(post)}>
                   <img
-                    src={imageForPost(post, 880, 620)}
+                    src={cardImage?.src}
+                    srcset={cardImage?.srcset}
+                    sizes="(max-width: 760px) calc(100vw - 32px), (max-width: 1024px) calc(50vw - 28px), calc(33vw - 24px)"
                     alt={post.title}
                     loading="lazy"
                     width="880"
@@ -257,7 +279,8 @@ const hasCoverImage = (post: PostCardDTO) => Boolean(post.coverImage);
               </a>
             )}
           </article>
-        ))}
+          );
+        })}
       </section>
     ) : null}
 
@@ -421,7 +444,7 @@ const hasCoverImage = (post: PostCardDTO) => Boolean(post.coverImage);
       font-size: 10px;
       letter-spacing: 0.24em;
       text-transform: uppercase;
-      color: #8a7e76;
+      color: #65594f;
       margin-bottom: 10px;
     }
 
@@ -943,7 +966,7 @@ const hasCoverImage = (post: PostCardDTO) => Boolean(post.coverImage);
 
     .launch-archive__footnote {
       margin-top: 16px;
-      color: rgba(61, 40, 23, 0.5);
+      color: #5c5048;
       font-family: "DM Sans", Arial, sans-serif;
       font-size: 11px;
       letter-spacing: 0.08em;

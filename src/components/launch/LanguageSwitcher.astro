@@ -23,7 +23,7 @@ const region = current?.key.split("-")[1]?.toUpperCase() || current?.key.toUpper
 ---
 
 <details class="launch-lang" data-tone={tone}>
-  <summary aria-label="Select language">
+  <summary aria-haspopup="listbox">
     <span>{current?.flag || "🌐"}</span>
     <span>{region}</span>
     <svg viewBox="0 0 10 10" aria-hidden="true">

@@ -26,7 +26,18 @@ const hasCoverlines = coverlines.length > 0;
 
 <div class:list={["launch-v3", { "launch-v3--single": !hasCoverlines }]} data-launch-home data-variant={variant}>
   <div class="launch-v3__image-wrap">
-    {launchImage ? <img src={launchImage} alt={featuredTitle} loading="eager" width="1800" height="1300" /> : null}
+    {launchImage ? (
+      <img
+        src={launchImage.src}
+        srcset={launchImage.srcset}
+        sizes="100vw"
+        alt={featuredTitle}
+        loading="eager"
+        fetchpriority="high"
+        width="1800"
+        height="1300"
+      />
+    ) : null}
   </div>
 
   <div class="launch-v3__top-fade"></div>

@@ -3,7 +3,7 @@ export const prerender = false;
 
 import { getLaunchHomeCopy } from "@/components/launch/copy";
 import LanguageSwitcher from "@/components/launch/LanguageSwitcher.astro";
-import type { LaunchVariant } from "@/components/launch/types";
+import type { LaunchImageAsset, LaunchVariant } from "@/components/launch/types";
 import V1 from "@/components/launch/variants/V1.astro";
 import V2 from "@/components/launch/variants/V2.astro";
 import V3 from "@/components/launch/variants/V3.astro";
@@ -39,12 +39,43 @@ const fallbackCoverBySlug: Record<string, string> = {
 const fallbackCoverDefault =
   "https://images.unsplash.com/photo-1581682101370-fafc58e0f387?auto=format&fit=crop&w=1600&q=80";
 
-const imageForPost = (): string => {
-  if (!featured) return fallbackCoverDefault;
-  if (featured.coverImage) {
-    return urlFor(featured.coverImage).width(1800).height(1300).fit("crop").auto("format").url();
+const resizeRemoteImage = (src: string, width: number, quality = 68): string => {
+  try {
+    const parsed = new URL(src);
+    parsed.searchParams.set("auto", "format");
+    parsed.searchParams.set("fit", "crop");
+    parsed.searchParams.set("w", String(width));
+    parsed.searchParams.set("q", String(quality));
+    return parsed.toString();
+  } catch {
+    return src;
   }
-  return fallbackCoverBySlug[featured.slug] || fallbackCoverDefault;
+};
+
+const imageForPost = (width: number, height: number, quality = 66): string => {
+  if (!featured) return resizeRemoteImage(fallbackCoverDefault, width);
+  if (featured.coverImage) {
+    return urlFor(featured.coverImage).width(width).height(height).fit("crop").quality(quality).auto("format").url();
+  }
+  return resizeRemoteImage(fallbackCoverBySlug[featured.slug] || fallbackCoverDefault, width, quality);
+};
+
+const responsiveLaunchImage = (
+  baseWidth: number,
+  baseHeight: number,
+  widths: number[],
+  quality = 66,
+): LaunchImageAsset | null => {
+  if (!featured) return null;
+  return {
+    src: imageForPost(baseWidth, baseHeight, quality),
+    srcset: widths
+      .map((width) => {
+        const scaledHeight = Math.round((baseHeight / baseWidth) * width);
+        return `${imageForPost(width, scaledHeight, quality)} ${width}w`;
+      })
+      .join(", "),
+  };
 };
 
 const validVariants: LaunchVariant[] = ["v1", "v2", "v3"];
@@ -87,7 +118,8 @@ const launchAlternates = LOCALES.map((item) => ({
 
 const currentLocaleMeta = LOCALES.find((item) => item.key === locale) || LOCALES[0];
 const localeOptions = LOCALES.map((item) => ({ key: item.key, label: item.label, flag: item.flag }));
-const launchImage = imageForPost();
+const launchImage = responsiveLaunchImage(1440, 1040, [480, 720, 960, 1200, 1440], 64);
+const launchImageMobile = responsiveLaunchImage(960, 1080, [360, 540, 720, 960], 58);
 const copy = getLaunchHomeCopy(locale);
 const description = copy.subtitle;
 ---
@@ -112,6 +144,7 @@ const description = copy.subtitle;
       archivePath={archivePath}
       homePath={homePath}
       launchImage={launchImage}
+      launchImageMobile={launchImageMobile}
       currentLocaleMeta={currentLocaleMeta}
       localeOptions={localeOptions}
       localeLinkSuffix={localeLinkSuffix}

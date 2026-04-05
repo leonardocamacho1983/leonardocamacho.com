@@ -45,7 +45,17 @@ const hasCoverlines = coverlines.length > 0;
         data-launch-article-link
         href={launchPostPath(featured.slug)}
       >
-        {launchImage ? <img src={launchImage} alt={featuredTitle} loading="lazy" width="980" height="860" /> : null}
+        {launchImage ? (
+          <img
+            src={launchImage.src}
+            srcset={launchImage.srcset}
+            sizes="(max-width: 900px) 100vw, 38vw"
+            alt={featuredTitle}
+            loading="lazy"
+            width="980"
+            height="860"
+          />
+        ) : null}
         <div class="launch-v2__card-overlay"></div>
         <div class="launch-v2__card-copy">
           <span>{featuredCategory}</span>
